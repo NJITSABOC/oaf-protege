@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+    <VSNode splits="1.0">
+        <CNode>
+            <Component label="BLUOWL for Protege">
+                <Property id="pluginId" value="edu.njit.cs.saboc.bluowl.BLUOWLView"/>
+            </Component>
+        </CNode>
+    </VSNode>
+</layout>

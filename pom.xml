@@ -20,10 +20,8 @@
     <name>BLUOWL Protege Plugin</name> 
     <description>The BLUOWL Protege Plugin</description> 
 
-
     <packaging>bundle</packaging>
 
-	
     <dependencies>
         <dependency>
             <groupId>edu.stanford.protege</groupId>
@@ -62,6 +60,11 @@
             <artifactId>BLUOWL</artifactId>
             <version>0.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>json.simple</groupId>
+            <artifactId>json.simple</artifactId>
+            <version>0.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -85,18 +88,24 @@
                         <Bundle-ClassPath>.</Bundle-ClassPath>
                         <Bundle-SymbolicName>${project.artifactId};singleton:=true</Bundle-SymbolicName>
                         <Bundle-Vendor>SABOC BLUOWL Development Team</Bundle-Vendor>
+                        
                         <Import-Package>
-                            org.apache.log4j.*;version="[1.2,2)", 
-                            org.protege.editor.core.*;version="4.3",
-                            org.protege.editor.owl.*;version="4.3",
+                            org.apache.log4j.*; version="[1.2,2)", 
+                            org.protege.editor.core.*; version="4.3",
+                            org.protege.editor.owl.*; version="4.3",
+                            org.protege.editor.owl.ui; version="4.3",
                             *
                         </Import-Package>
+                        
                         <Include-Resource>plugin.xml, {maven-resources}</Include-Resource>
+                        
                         <Private-Package>
                             edu.njit.cs.saboc.blu.*,
                             edu.njit.cs.saboc.nat.*,
-                            SnomedShared.*
+                            SnomedShared.*,
+                            org.json.simple.*
                         </Private-Package>
+                        
                     </instructions>
                     <executions>
                         <execution>
@@ -117,5 +126,15 @@
                 </configuration>
             </plugin>
         </plugins>
+        
+        
+        <resources>
+            <resource>
+                <directory>C:\Users\snoop_000\Documents\NetBeansProjects\BLUProject\org.protege.plugin.template</directory>
+                <includes>
+                    <include>BLUOWLTabLayout.xml</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
 </project>

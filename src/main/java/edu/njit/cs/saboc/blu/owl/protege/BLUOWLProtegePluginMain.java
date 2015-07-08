@@ -13,12 +13,14 @@ import org.semanticweb.owlapi.model.*;
 import edu.njit.cs.saboc.blu.owl.abn.loader.*;
 import edu.njit.cs.saboc.blu.owl.utils.owlproperties.*;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.*;
-import edu.njit.cs.saboc.blu.owl.gui.conceptbrowser.OWLBrowserDataSource;
-import edu.njit.cs.saboc.blu.owl.gui.conceptbrowser.OWLInternalConceptBrowserFrame;
-import edu.njit.cs.saboc.blu.owl.gui.conceptbrowser.OWLNATLayout;
+
 import edu.njit.cs.saboc.blu.owl.gui.dialogs.listeners.OWLPAreaDetailsActionAdapter;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.*;
+import edu.njit.cs.saboc.blu.owl.gui.nat.OWLInternalConceptBrowserFrame;
+import edu.njit.cs.saboc.blu.owl.gui.nat.OWLNATAdjustableLayout;
+import edu.njit.cs.saboc.blu.owl.protege.nat.UpdatingOWLBrowserDataSource;
 import edu.njit.cs.saboc.nat.generic.gui.panels.FocusConceptPanel;
+import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
@@ -26,6 +28,9 @@ import org.protege.editor.owl.model.OWLModelManager;
 import org.protege.editor.owl.model.OWLWorkspace;
 import org.protege.editor.owl.model.event.OWLModelManagerChangeEvent;
 import org.protege.editor.owl.model.event.OWLModelManagerListener;
+import org.semanticweb.owlapi.change.AddAxiomData;
+import org.semanticweb.owlapi.change.OWLOntologyChangeData;
+import org.semanticweb.owlapi.change.OWLOntologyChangeRecord;
 
 public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
@@ -54,14 +59,28 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
                     case ACTIVE_ONTOLOGY_CHANGED:
                         initializeBLUOWL();
                         break;
+                        
+                    case ONTOLOGY_VISIBILITY_CHANGED:
+                    case ENTITY_RENDERER_CHANGED:
+                    case ENTITY_RENDERING_CHANGED:
+                    case REASONER_CHANGED:
+                    case ABOUT_TO_CLASSIFY:
+                    case ONTOLOGY_CLASSIFIED:
+                    case ONTOLOGY_CREATED:
+                    case ONTOLOGY_LOADED:
+                    case ONTOLOGY_RELOADED:
+                    case ONTOLOGY_SAVED:
+                        
+                    default:
                 }
             }
         };
 
-        modelManager.addListener(modelListener);
-
-        this.add(tabbedPane, BorderLayout.CENTER);
         
+        modelManager.addListener(modelListener);
+        
+        this.add(tabbedPane, BorderLayout.CENTER);
+
         initializeBLUOWL();
 
         log.info("BLUOWL STATUS: Initialized");
@@ -107,29 +126,63 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
         tabbedPane.add(new ProtegeOWLTaxonomyPanel(graphFrame), "Partial-area Taxonomies");
 
-        OWLBrowserDataSource dataSource = new OWLBrowserDataSource(ontologyManager, ontology);
-        
+        UpdatingOWLBrowserDataSource dataSource = new UpdatingOWLBrowserDataSource(ontologyManager, ontology);
+
         OWLInternalConceptBrowserFrame browserFrame = new OWLInternalConceptBrowserFrame(getMyFrame(), dataSource);
-        
-        final FocusConceptPanel<OWLClass> fcPanel = ((OWLNATLayout)browserFrame.getBrowser().getNATLayout()).getFocusConceptPanel();
-        
-        JButton editButton = new JButton("Edit");
-        
+
+        final FocusConceptPanel<OWLClass> fcPanel = ((OWLNATAdjustableLayout) browserFrame.getBrowser().getNATLayout()).getFocusConceptPanel();
+
+        JButton editButton = new JButton("Edit Class");
+
         editButton.addActionListener(e -> {
-            OWLClass cls = (OWLClass)browserFrame.getBrowser().getFocusConcept().getConcept();
-            
+            OWLClass cls = (OWLClass) browserFrame.getBrowser().getFocusConcept().getConcept();
+
             OWLWorkspace workspace = getOWLWorkspace();
 
             workspace.getOWLSelectionModel().setSelectedEntity(cls);
             workspace.displayOWLEntity(cls);
         });
         
+        OWLOntologyChangeListener changeListener = new OWLOntologyChangeListener() {
+            public void ontologiesChanged(List<? extends OWLOntologyChange> changes) {
+                
+                changes.forEach((OWLOntologyChange change) -> {
+                    OWLOntologyChangeData changeData = change.getChangeData();
+                    OWLOntologyChangeRecord changeRecord = change.getChangeRecord();
+                                       
+                    if(change.isAddAxiom()) {
+                        AddAxiom addAxiom = (AddAxiom)change;
+                        
+                        AddAxiomData addAxiomData = addAxiom.getChangeData();
+                        
+                        
+                    } else if(change.isAxiomChange()) {
+                        OWLAxiomChange changeAxiom = (OWLAxiomChange)change;
+                        
+                        
+                    } else if(change.isImportChange()) {
+                        ImportChange importChange = (ImportChange)change;
+                        
+                        
+                    } else if(change.isRemoveAxiom()) {
+                        RemoveAxiom removeAxiom = (RemoveAxiom)change;
+                        
+                    } else {
+                        
+                    }
+                });
+                
+                dataSource.update(browserFrame.getBrowser().getFocusConcept());
+            }
+        };
+        
+        OWLModelManager modelManager = getOWLModelManager();
+        
+        modelManager.addOntologyChangeListener(changeListener);
+
         fcPanel.addOptionButton(editButton);
 
-        tabbedPane.add(browserFrame.getContentPane(), "OWL NAT");
-        
-        
-
+        tabbedPane.add(browserFrame.getContentPane(), "OWL Neighborhood Auditing Tool (OWL NAT)");
     }
 
     private JFrame getMyFrame() {
@@ -151,5 +204,4 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
     protected void disposeOWLView() {
 
     }
-
 }
