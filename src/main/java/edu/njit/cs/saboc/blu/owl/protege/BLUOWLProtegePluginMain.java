@@ -13,6 +13,7 @@ import org.semanticweb.owlapi.model.*;
 import edu.njit.cs.saboc.blu.owl.abn.loader.*;
 import edu.njit.cs.saboc.blu.owl.utils.owlproperties.*;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.*;
+import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLDisplayFrameListener;
 
 import edu.njit.cs.saboc.blu.owl.gui.dialogs.listeners.OWLPAreaDetailsActionAdapter;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.*;
@@ -20,8 +21,10 @@ import edu.njit.cs.saboc.blu.owl.gui.nat.OWLInternalConceptBrowserFrame;
 import edu.njit.cs.saboc.blu.owl.gui.nat.OWLNATAdjustableLayout;
 import edu.njit.cs.saboc.blu.owl.protege.nat.UpdatingOWLBrowserDataSource;
 import edu.njit.cs.saboc.nat.generic.gui.panels.FocusConceptPanel;
+import java.awt.GraphicsEnvironment;
 import java.util.List;
 import javax.swing.JButton;
+import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import org.protege.editor.owl.model.OWLModelManager;
@@ -93,7 +96,7 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
-        OWLPAreaTaxonomyLoader loader = new OWLPAreaTaxonomyLoader(ontologyManager, ontology.getOntologyID().toString(), ontology);
+        BLUOntologyDataManager loader = new BLUOntologyDataManager(ontologyManager, null, ontology.getOntologyID().toString(), ontology);
 
         log.info(loader.getOntologyRoots());
 
@@ -125,10 +128,28 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
         });
 
         tabbedPane.add(new ProtegeOWLTaxonomyPanel(graphFrame), "Partial-area Taxonomies");
-
+        
         UpdatingOWLBrowserDataSource dataSource = new UpdatingOWLBrowserDataSource(ontologyManager, ontology);
 
-        OWLInternalConceptBrowserFrame browserFrame = new OWLInternalConceptBrowserFrame(getMyFrame(), dataSource);
+        OWLInternalConceptBrowserFrame browserFrame = new OWLInternalConceptBrowserFrame(getMyFrame(), dataSource,
+                new OWLDisplayFrameListener(getMyFrame()) {
+                    public void displayFrame(final JInternalFrame internalFrame) {
+                        Container contentPane = internalFrame.getContentPane();
+                        
+                        JFrame contentFrame = new JFrame();
+
+                        contentFrame.setTitle("Biomedical Layout Utility for OWL (BLUOWL) by SABOC");
+
+                        contentFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+                        contentFrame.setBounds(GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds());
+                        
+                        contentFrame.add(contentPane);
+                        
+                        contentFrame.setVisible(true);
+                    }
+                }
+        );
 
         final FocusConceptPanel<OWLClass> fcPanel = ((OWLNATAdjustableLayout) browserFrame.getBrowser().getNATLayout()).getFocusConceptPanel();
 
