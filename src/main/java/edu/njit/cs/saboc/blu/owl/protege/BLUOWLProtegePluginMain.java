@@ -20,13 +20,14 @@ import edu.njit.cs.saboc.blu.owl.gui.nat.OWLInternalConceptBrowserFrame;
 import edu.njit.cs.saboc.blu.owl.gui.nat.OWLNATAdjustableLayout;
 import edu.njit.cs.saboc.blu.owl.protege.nat.UpdatingOWLBrowserDataSource;
 import edu.njit.cs.saboc.nat.generic.gui.panels.FocusConceptPanel;
-import java.awt.GraphicsEnvironment;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
 import org.protege.editor.owl.model.OWLModelManager;
 import org.protege.editor.owl.model.OWLWorkspace;
 import org.protege.editor.owl.model.event.OWLModelManagerChangeEvent;
@@ -51,23 +52,7 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
     private JTabbedPane tabbedPane = new JTabbedPane();
     
-    private final OWLDisplayFrameListener displayListener = new OWLDisplayFrameListener(getMyFrame()) {
-        public void displayFrame(final JInternalFrame internalFrame) {
-            Container contentPane = internalFrame.getContentPane();
-
-            JFrame contentFrame = new JFrame();
-
-            contentFrame.setTitle("Biomedical Layout Utility for OWL (BLUOWL) by SABOC");
-
-            contentFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-            contentFrame.setBounds(GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds());
-
-            contentFrame.add(contentPane);
-
-            contentFrame.setVisible(true);
-        }
-    };
+    private OWLDisplayFrameListener displayListener;
          
 
     protected void initialiseOWLView() throws Exception {
@@ -168,6 +153,30 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
                 });
                 
                 taxonomyUpdateThread.start();
+            }
+        };
+        
+        displayListener = new OWLDisplayFrameListener(getMyFrame()) {
+            public void displayFrame(final JInternalFrame internalFrame) {
+                Container contentPane = internalFrame.getContentPane();
+
+                JFrame contentFrame = new JFrame();
+
+                contentFrame.setTitle("Biomedical Layout Utility for OWL (BLUOWL) by SABOC");
+
+                contentFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+                contentFrame.setBounds(new Rectangle(0, 0, 1200, 800));
+
+                contentFrame.add(contentPane);
+
+                contentFrame.setVisible(true);
+                
+                SwingUtilities.invokeLater( () -> {
+                    contentFrame.toFront();
+                    contentFrame.repaint();
+                });
+                
             }
         };
                 
