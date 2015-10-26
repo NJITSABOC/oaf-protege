@@ -10,7 +10,6 @@ import org.protege.editor.owl.ui.view.AbstractOWLViewComponent;
 
 import org.semanticweb.owlapi.model.*;
 
-import edu.njit.cs.saboc.blu.owl.abn.loader.*;
 import edu.njit.cs.saboc.blu.owl.utils.owlproperties.*;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.*;
 import edu.njit.cs.saboc.blu.owl.datastructure.hierarchy.OWLClassHierarchy;
@@ -22,8 +21,9 @@ import edu.njit.cs.saboc.blu.owl.gui.nat.OWLNATAdjustableLayout;
 import edu.njit.cs.saboc.blu.owl.protege.nat.UpdatingOWLBrowserDataSource;
 import edu.njit.cs.saboc.nat.generic.gui.panels.FocusConceptPanel;
 import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -31,6 +31,7 @@ import javax.swing.JButton;
 import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import org.protege.editor.owl.model.OWLModelManager;
 import org.protege.editor.owl.model.OWLWorkspace;
@@ -47,6 +48,8 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
     private static final long serialVersionUID = -4515710047558710080L;
     public static final Logger log = Logger.getLogger(BLUOWLProtegePluginMain.class);
+    
+    private final HashMap<OWLOntology, ProtegeBLUOntologyDataManager> ontologyManagers = new HashMap<>();
 
     private class ProtegeOWLTaxonomyPanel extends JPanel {
 
@@ -78,13 +81,18 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
                     break;
 
                 case ABOUT_TO_CLASSIFY:
-                    log.info("BLUOWL: Ontology Classifying");
+                    useInferredBtn.setEnabled(false);
                     break;
 
                 case ONTOLOGY_CLASSIFIED:
-                    log.info("BLUOWL: Ontology Classified");
+                    if(getOWLModelManager().getOWLReasonerManager().getCurrentReasoner().isConsistent()) {
+                        useInferredBtn.setEnabled(true);
+                    } else {
+                        useInferredBtn.setEnabled(false);
+                    }
+                    
+                    useInferredBtn.setText("Use Inferred Hierarchy");
 
-                    deriveCompleteInferredTaxonomy();
                     break;
 
                 case ONTOLOGY_CREATED:
@@ -148,43 +156,12 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
                 }
             });
 
+            useInferredBtn.setEnabled(false);
+            useInferredBtn.setText("Use Inferred Hierarchy (run reasoner to reenable)");
+
             dataSource.update(conceptBrowserFrame.getBrowser().getFocusConcept());
 
-            Thread taxonomyUpdateThread = new Thread(() -> {
-                OWLOntologyManager ontologyManager = getOWLModelManager().getOWLOntologyManager();
-
-                OWLOntology ontology = getOWLModelManager().getActiveOntology();
-
-                BLUOntologyDataManager loader = new BLUOntologyDataManager(ontologyManager, null, ontology.getOntologyID().toString(), ontology);
-
-                OWLPAreaTaxonomy currentTaxonomy = (OWLPAreaTaxonomy) graphFrame.getGraph().getAbstractionNetwork();
-
-                HashSet<PropertyUsageType> usages = currentTaxonomy.getPropertyTypes();
-
-                OWLPAreaTaxonomy newTaxonomy = loader.createCompleteOntologyTaxonomy(usages);
-
-                if (!currentTaxonomy.getRootGroup().getRootAsOWLClass().equals(newTaxonomy.getRootGroup().getRootAsOWLClass())) {
-                    newTaxonomy = newTaxonomy.getRootSubtaxonomy(currentTaxonomy.getRootGroup());
-                }
-
-                if (currentTaxonomy.isReduced()) {
-                    ArrayList<OWLPArea> pareas = new ArrayList<>(currentTaxonomy.getGroupHierarchy().getNodesInHierarchy());
-
-                    int smallestSize = pareas.get(0).getConceptCount();
-
-                    for (int c = 0; c < pareas.size(); c++) {
-                        if (pareas.get(c).getConceptCount() < smallestSize) {
-                            smallestSize = pareas.get(c).getConceptCount();
-                        }
-                    }
-
-                    newTaxonomy = newTaxonomy.getReduced(smallestSize);
-                }
-
-                graphFrame.replaceInternalFrameDataWith(newTaxonomy, ontology);
-            });
-
-            taxonomyUpdateThread.start();
+            updateStatedTaxonomy(true);
         }
     };
 
@@ -220,8 +197,93 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
         };
         
         graphFrame = new OWLInternalPAreaTaxonomyGraphFrame(getMyFrame(), 
-                new ProtegeOWLPAreaTaxonomyConfigurationFactory(getOWLWorkspace()), displayListener);              
-                            
+                new ProtegeOWLPAreaTaxonomyConfigurationFactory(getOWLWorkspace()), displayListener);           
+        
+        useInferredBtn = new JToggleButton("Use Inferred Hierarchy");
+        useInferredBtn.setEnabled(false);
+        
+        useInferredBtn.addActionListener( (ActionEvent ae) -> {
+            
+            OWLOntology ontology = getOWLModelManager().getActiveOntology();
+                
+            ProtegeBLUOntologyDataManager dataManager = ontologyManagers.get(ontology);
+            
+            log.info("BLUOWL: DataManager: " + dataManager);
+            
+            if(useInferredBtn.isSelected()) {
+                dataManager.setUseInferred(true);
+                    
+                log.info("BLUOWL: UPDATING INFERRED...");
+                
+                if(dataManager.getCurrentInferredTaxonomy().isPresent()) {
+                    log.info("BLUOWL: Displaying currently inferred...");
+                    
+                    graphFrame.replaceInternalFrameDataWith(dataManager.getCurrentInferredTaxonomy().get(), ontology);
+                } else {
+                    log.info("BLUOWL: Displaying new inferred...");
+                    
+                    updateInferredTaxonomy(true);
+                }
+            } else {
+                dataManager.setUseInferred(false);
+                
+                log.info("BLUOWL: Displaying current stated...");
+                
+                graphFrame.replaceInternalFrameDataWith(dataManager.getCurrentStatedTaxonomy(), ontology);
+            }
+        });
+        
+        graphFrame.addReportButtonToMenu(useInferredBtn);
+        graphFrame.addDisplayedTaxonomyChangedListener(new OWLInternalPAreaTaxonomyGraphFrame.DisplayedPAreaTaxonomyChangedListener() {
+
+            @Override
+            public void taxonomyDisplayed(OWLPAreaTaxonomy taxonomy) {
+                OWLOntology ontology = getOWLModelManager().getActiveOntology();
+                
+                ProtegeBLUOntologyDataManager dataManager = ontologyManagers.get(ontology);
+                
+                HashSet<PropertyUsageType> oldUsages = dataManager.getCurrentPropertyUsages();
+                HashSet<PropertyUsageType> newUsages = taxonomy.getPropertyTypes();
+                
+                boolean updateUsages = !oldUsages.equals(newUsages);
+               
+                log.info("BLUOWL: DataManager: " + dataManager + " | UseInferredVersion: " + dataManager.useInferredVersion());
+                
+                if(dataManager.useInferredVersion()) {
+                    
+                    if(dataManager.getCurrentInferredTaxonomy().isPresent()) {
+                        if(dataManager.getCurrentInferredTaxonomy().get() != taxonomy) {
+                            log.info("BLUOWL: Setting current inferred taxonomy...");
+                            dataManager.setCurrentInferredTaxonomy(taxonomy);
+                        }
+                    } else {
+                        log.info("BLUOWL: Setting current inferred taxonomy...");
+                        
+                        dataManager.setCurrentInferredTaxonomy(taxonomy);
+                    }
+                    
+                    if(updateUsages) {
+                        log.info("BLUOWL: Updating stated taxonomy...");
+                        
+                        updateStatedTaxonomy(false);
+                    }
+                } else {
+
+                    if (taxonomy != dataManager.getCurrentStatedTaxonomy()) {
+                        log.info("BLUOWL: Setting current stated taxonomy...");
+                        
+                        dataManager.setCurrentStatedTaxonomy(taxonomy);
+                    }
+                    
+                    if (updateUsages) {
+                        if(dataManager.getCurrentInferredTaxonomy().isPresent()) {
+                            updateInferredTaxonomy(false);
+                        }
+                    }
+                }
+            }
+        });
+                       
         tabbedPane.add(new ProtegeOWLTaxonomyPanel(graphFrame), "OWL Partial-area Taxonomies");
         
         this.add(tabbedPane, BorderLayout.CENTER);
@@ -236,19 +298,26 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
     }
     
     private OWLInternalPAreaTaxonomyGraphFrame graphFrame;
+    
+    private JToggleButton useInferredBtn;
 
     private OWLInternalConceptBrowserFrame conceptBrowserFrame;
     
     private UpdatingOWLBrowserDataSource dataSource;
     
     private void initializeBLUOWL() {
+                
         OWLOntologyManager ontologyManager = getOWLModelManager().getOWLOntologyManager();
 
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
+        
+        if(!ontologyManagers.containsKey(ontology)) {
+            ontologyManagers.put(ontology, new ProtegeBLUOntologyDataManager(ontologyManager, null, ontology.getOntologyID().toString(), ontology));
+        }
 
-        BLUOntologyDataManager loader = new BLUOntologyDataManager(ontologyManager, null, ontology.getOntologyID().toString(), ontology);
+        ProtegeBLUOntologyDataManager loader = ontologyManagers.get(ontology);
 
-        HashSet<PropertyUsageType> usages = new HashSet<PropertyUsageType>();
+        HashSet<PropertyUsageType> usages = new HashSet<>();
         
         if(loader.getOntologyMetrics().totalOPWithDomainCount > 0) {
             usages.add(PropertyUsageType.OPExplicitDomain);
@@ -258,9 +327,10 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
             // TODO: Figure out whats really available...
             usages.add(PropertyUsageType.OPExplicitDomain);
         }
-
-        OWLPAreaTaxonomy taxonomy = loader.createCompleteOntologyTaxonomy(usages);
         
+        OWLPAreaTaxonomy taxonomy = loader.deriveCompleteStatedTaxonomy(usages);
+        
+        loader.setCurrentStatedTaxonomy(taxonomy);
         graphFrame.replaceInternalFrameDataWith(taxonomy, ontology);
         
         dataSource = new UpdatingOWLBrowserDataSource(ontologyManager, ontology);
@@ -305,55 +375,84 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
         return f;
     }
     
-    private OWLPAreaTaxonomy deriveCompleteInferredTaxonomy() {
-        OWLModelManager modelManager = getOWLModelManager();
+    private void updateStatedTaxonomy(boolean showTaxonomy) {
         
-        OWLObjectHierarchyProvider<OWLClass> inferredHierarchy = modelManager.getOWLHierarchyManager().getInferredOWLClassHierarchyProvider();
-        
-        Set<OWLClass> roots = inferredHierarchy.getRoots();
-        
-        if(roots.size() == 1) {
-            OWLClass root = roots.iterator().next();
+        Thread taxonomyUpdateThread = new Thread(() -> {
             
-            if(root.isOWLThing()) {
-                OWLClassHierarchy hierarchy = new OWLClassHierarchy(root);
-                
-                HashSet<OWLClass> processed = new HashSet<>();
-                HashSet<OWLClass> inQueue = new HashSet<>();
-                
-                Queue<OWLClass> queue = new ArrayDeque<>();
-                
-                queue.add(root);
-                inQueue.add(root);
-                
-                while(!queue.isEmpty()) {
-                    OWLClass cls = queue.remove();
-                    
-                    processed.add(cls);
-                    inQueue.remove(cls);
-                    
-                    Set<OWLClass> children = inferredHierarchy.getChildren(cls);
-                    
-                    children.forEach( (OWLClass child) -> {
-                        hierarchy.addIsA(child, cls);
-                        
-                        if(!inQueue.contains(child) && !processed.contains(child)) {
-                            queue.add(child);
-                            inQueue.add(child);
-                        }
-                    });
-                }
-                
-                log.info("TOTAL CLASSES IN HIERARCHY: " + hierarchy.getNodesInHierarchy().size());
-                
-            } else {
-                log.info("ONE ROOT THAT IS NOT OWL THING!");
+            log.info("BLUOWL: Updating stated taxonomy");
+            
+            OWLOntology ontology = getOWLModelManager().getActiveOntology();
+
+            ProtegeBLUOntologyDataManager loader = ontologyManagers.get(ontology);
+            loader.reinitialize();
+
+            HashSet<PropertyUsageType> usages = loader.getCurrentPropertyUsages();
+
+            OWLPAreaTaxonomy taxonomy = loader.deriveCompleteStatedTaxonomy(usages);
+            loader.setCurrentStatedTaxonomy(taxonomy);
+            
+            if(showTaxonomy) {
+                graphFrame.replaceInternalFrameDataWith(taxonomy, ontology);
             }
-        } else {
-            log.info("MULTIPLE ROOTS!!!");
-        }
+        });
+
+        taxonomyUpdateThread.start();
+    }
+    
+    private void updateInferredTaxonomy(boolean showTaxonomy) {
         
-        return null;
+        Thread loadThread = new Thread(() -> {
+            OWLOntology ontology = getOWLModelManager().getActiveOntology();
+
+            ProtegeBLUOntologyDataManager loader = ontologyManagers.get(ontology);
+
+            OWLModelManager modelManager = getOWLModelManager();
+
+            OWLObjectHierarchyProvider<OWLClass> inferredHierarchy = modelManager.getOWLHierarchyManager().getInferredOWLClassHierarchyProvider();
+
+            OWLClass root = modelManager.getOWLDataFactory().getOWLThing();
+            
+            OWLClassHierarchy hierarchy = new OWLClassHierarchy(root);
+
+            HashSet<OWLClass> processed = new HashSet<>();
+            HashSet<OWLClass> inQueue = new HashSet<>();
+
+            Queue<OWLClass> queue = new ArrayDeque<>();
+
+            queue.add(root);
+            inQueue.add(root);
+
+            while (!queue.isEmpty()) {
+                OWLClass cls = queue.remove();
+
+                processed.add(cls);
+                inQueue.remove(cls);
+
+                Set<OWLClass> children = inferredHierarchy.getChildren(cls);
+
+                children.forEach((OWLClass child) -> {
+                    hierarchy.addIsA(child, cls);
+
+                    if (!inQueue.contains(child) && !processed.contains(child)) {
+                        queue.add(child);
+                        inQueue.add(child);
+                    }
+                });
+            }
+
+            HashSet<PropertyUsageType> usages = loader.getCurrentPropertyUsages();
+
+            loader.setInferredHierarchy(hierarchy);
+
+            OWLPAreaTaxonomy inferredTaxonomy = loader.deriveCompleteInferredTaxonomy(usages);
+            loader.setCurrentInferredTaxonomy(inferredTaxonomy);
+            
+            if(showTaxonomy) {
+                graphFrame.replaceInternalFrameDataWith(inferredTaxonomy, ontology);
+            }
+        });
+        
+        loadThread.start();
     }
 
     protected void disposeOWLView() {
