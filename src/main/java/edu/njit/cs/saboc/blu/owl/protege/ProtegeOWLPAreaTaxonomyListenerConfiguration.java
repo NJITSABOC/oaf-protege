@@ -3,7 +3,7 @@ package edu.njit.cs.saboc.blu.owl.protege;
 import edu.njit.cs.saboc.blu.core.gui.gep.panels.details.listeners.EntitySelectionListener;
 import edu.njit.cs.saboc.blu.owl.gui.gep.panels.pareataxonomy.configuration.OWLPAreaTaxonomyConfiguration;
 import edu.njit.cs.saboc.blu.owl.gui.gep.panels.pareataxonomy.configuration.OWLPAreaTaxonomyListenerConfiguration;
-import edu.njit.cs.saboc.blu.owl.utils.owlproperties.PropertyDetails;
+//import edu.njit.cs.saboc.blu.owl.utils.owlproperties.PropertyDetails;
 import org.protege.editor.owl.model.OWLWorkspace;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLProperty;
@@ -21,7 +21,7 @@ public class ProtegeOWLPAreaTaxonomyListenerConfiguration extends OWLPAreaTaxono
         
         this.workspace = workspace;
     }
-    
+    /*
     @Override
     public EntitySelectionListener<PropertyDetails> getContainerRelationshipSelectedListener() {
         return new ProtegeDisplayEntityListener<PropertyDetails, OWLProperty>(workspace) {
@@ -54,7 +54,7 @@ public class ProtegeOWLPAreaTaxonomyListenerConfiguration extends OWLPAreaTaxono
             }
         };
     }
-
+    */
     
     
 }

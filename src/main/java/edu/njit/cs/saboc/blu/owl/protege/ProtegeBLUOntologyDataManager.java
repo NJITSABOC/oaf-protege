@@ -1,13 +1,16 @@
 package edu.njit.cs.saboc.blu.owl.protege;
 
-import edu.njit.cs.saboc.blu.owl.abn.loader.BLUOntologyDataManager;
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomyGenerator;
+import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomy;
-import edu.njit.cs.saboc.blu.owl.datastructure.hierarchy.OWLClassHierarchy;
-import edu.njit.cs.saboc.blu.owl.utils.owlproperties.PropertyUsageType;
+import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomyFactory;
+import edu.njit.cs.saboc.blu.owl.ontology.OAFOntologyDataManager;
+import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
+import edu.njit.cs.saboc.blu.owl.utils.owlproperties.PropertyTypeAndUsage;
 import java.io.File;
-import java.util.HashSet;
 import java.util.Optional;
-import org.semanticweb.owlapi.model.OWLClass;
+import java.util.Set;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
@@ -15,16 +18,16 @@ import org.semanticweb.owlapi.model.OWLOntologyManager;
  *
  * @author Chris O
  */
-public class ProtegeBLUOntologyDataManager extends BLUOntologyDataManager {
+public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
 
     private boolean useInferredVersion = false;
-    private Optional<OWLClassHierarchy> currentInferredHierarchy = Optional.empty();
+    private Optional<Hierarchy<OWLConcept>> currentInferredHierarchy = Optional.empty();
     
     private OWLPAreaTaxonomy currentStatedTaxonomy;
     
     private Optional<OWLPAreaTaxonomy> currentInferredTaxonomy = Optional.empty();
     
-    private HashSet<PropertyUsageType> currentPropertyUsages;
+    private Set<PropertyTypeAndUsage> currentPropertyUsages;
             
     public ProtegeBLUOntologyDataManager(OWLOntologyManager manager, File ontologyFile, String ontologyName, OWLOntology ontology) {
         super(manager, ontologyFile, ontologyName, ontology);
@@ -32,7 +35,7 @@ public class ProtegeBLUOntologyDataManager extends BLUOntologyDataManager {
     
     public void setCurrentStatedTaxonomy(OWLPAreaTaxonomy currentStatedTaxonomy) {
         this.currentStatedTaxonomy = currentStatedTaxonomy;
-        this.currentPropertyUsages = currentStatedTaxonomy.getPropertyTypes();
+        this.currentPropertyUsages = currentStatedTaxonomy.getPropertyTypesAndUsages();
     }
     
     public OWLPAreaTaxonomy getCurrentStatedTaxonomy() {
@@ -43,7 +46,7 @@ public class ProtegeBLUOntologyDataManager extends BLUOntologyDataManager {
         this.currentInferredTaxonomy = Optional.ofNullable(currentInferredTaxonomy);
         
         if(currentInferredTaxonomy != null) {
-             this.currentPropertyUsages = currentInferredTaxonomy.getPropertyTypes();
+             this.currentPropertyUsages = currentInferredTaxonomy.getPropertyTypesAndUsages();
         }
     }
     
@@ -51,7 +54,7 @@ public class ProtegeBLUOntologyDataManager extends BLUOntologyDataManager {
         return this.currentInferredTaxonomy;
     }
     
-    public HashSet<PropertyUsageType> getCurrentPropertyUsages() {
+    public Set<PropertyTypeAndUsage> getCurrentPropertyUsages() {
         return currentPropertyUsages;
     }
     
@@ -59,52 +62,23 @@ public class ProtegeBLUOntologyDataManager extends BLUOntologyDataManager {
         this.useInferredVersion = useInferred;
     }
 
-    @Override
-    protected HashSet<OWLClass> getChildren(OWLClass cls) {
-        if(useInferredVersion) {
-            if(currentInferredHierarchy.isPresent()) {
-                return currentInferredHierarchy.get().getChildren(cls);
-            } else {
-                return new HashSet<>();
-            }
-            
-        } else {
-            return super.getChildren(cls);
-        }
-    }
-    
-    public void setInferredHierarchy(OWLClassHierarchy hierarchy) {
-        currentInferredHierarchy = Optional.of(hierarchy);
-    }
-    
     public boolean useInferredVersion() {
         return useInferredVersion;
     }
-    
-    public OWLPAreaTaxonomy deriveCompleteStatedTaxonomy(HashSet<PropertyUsageType> properties) {
-        ProtegeBLUOntologyDataManager dataManager = new ProtegeBLUOntologyDataManager(
-                this.getManager(), 
-                this.getOntologyFile(), 
-                this.getOntologyName(), 
-                this.getOntology());
+
+    public OWLPAreaTaxonomy deriveCompleteStatedTaxonomy(Set<PropertyTypeAndUsage> usages) {
         
-        return dataManager.createCompleteOntologyTaxonomy(properties);
+        Hierarchy<OWLConcept> currentStatedHierarchy = getOntology().getConceptHierarchy();
+           
+        OWLPAreaTaxonomyFactory factory = new OWLPAreaTaxonomyFactory(this, usages);
+        PAreaTaxonomyGenerator generator = new PAreaTaxonomyGenerator();
+        return (OWLPAreaTaxonomy) generator.derivePAreaTaxonomy(factory, currentStatedHierarchy);
     }
-    
-    public OWLPAreaTaxonomy deriveCompleteInferredTaxonomy(HashSet<PropertyUsageType> properties) {
-        ProtegeBLUOntologyDataManager dataManager = new ProtegeBLUOntologyDataManager(
-                this.getManager(), 
-                this.getOntologyFile(), 
-                this.getOntologyName(), 
-                this.getOntology());
 
-        if (this.currentInferredHierarchy.isPresent()) {
-            dataManager.setUseInferred(true);
-            dataManager.setInferredHierarchy(this.currentInferredHierarchy.get());
-
-            return dataManager.createCompleteOntologyTaxonomy(properties);
-        } else {
-            return null;
-        }
+    public OWLPAreaTaxonomy deriveCompleteInferredTaxonomy(Set<PropertyTypeAndUsage> usages) {
+        OWLPAreaTaxonomyFactory factory = new OWLPAreaTaxonomyFactory(this, usages);
+        PAreaTaxonomyGenerator generator = new PAreaTaxonomyGenerator();
+        return (OWLPAreaTaxonomy) generator.derivePAreaTaxonomy(factory, currentInferredHierarchy.get());
     }
+  
 }
