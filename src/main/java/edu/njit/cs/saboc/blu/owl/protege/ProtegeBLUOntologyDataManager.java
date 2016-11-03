@@ -81,4 +81,11 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
         return (OWLPAreaTaxonomy) generator.derivePAreaTaxonomy(factory, currentInferredHierarchy.get());
     }
   
+    public void refreshOntology(){
+        this.reinitialize();
+    }
+
+    public void setInferredHierarchy(Hierarchy<OWLConcept> hierarchy) {
+        this.currentInferredHierarchy = Optional.of(hierarchy);
+    }
 }
