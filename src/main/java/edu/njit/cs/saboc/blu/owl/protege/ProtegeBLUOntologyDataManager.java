@@ -2,9 +2,12 @@ package edu.njit.cs.saboc.blu.owl.protege;
 
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomyGenerator;
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomy;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomyFactory;
+import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomy;
+import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomyFactory;
 import edu.njit.cs.saboc.blu.owl.ontology.OAFOntologyDataManager;
 import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
 import edu.njit.cs.saboc.blu.owl.utils.owlproperties.PropertyTypeAndUsage;
@@ -22,42 +25,51 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
 
     private boolean useInferredVersion = false;
     private Optional<Hierarchy<OWLConcept>> currentInferredHierarchy = Optional.empty();
-    
+
     private OWLPAreaTaxonomy currentStatedTaxonomy;
-    
+    private OWLDiffPAreaTaxonomy currentDiffTaxonomy;
+
     private Optional<OWLPAreaTaxonomy> currentInferredTaxonomy = Optional.empty();
-    
+
     private Set<PropertyTypeAndUsage> currentPropertyUsages;
-            
+
     public ProtegeBLUOntologyDataManager(OWLOntologyManager manager, File ontologyFile, String ontologyName, OWLOntology ontology) {
         super(manager, ontologyFile, ontologyName, ontology);
     }
-    
+
     public void setCurrentStatedTaxonomy(OWLPAreaTaxonomy currentStatedTaxonomy) {
         this.currentStatedTaxonomy = currentStatedTaxonomy;
         this.currentPropertyUsages = currentStatedTaxonomy.getPropertyTypesAndUsages();
     }
-    
+
     public OWLPAreaTaxonomy getCurrentStatedTaxonomy() {
         return currentStatedTaxonomy;
     }
-    
+
     public void setCurrentInferredTaxonomy(OWLPAreaTaxonomy currentInferredTaxonomy) {
         this.currentInferredTaxonomy = Optional.ofNullable(currentInferredTaxonomy);
-        
-        if(currentInferredTaxonomy != null) {
-             this.currentPropertyUsages = currentInferredTaxonomy.getPropertyTypesAndUsages();
+
+        if (currentInferredTaxonomy != null) {
+            this.currentPropertyUsages = currentInferredTaxonomy.getPropertyTypesAndUsages();
         }
     }
-    
+
     public Optional<OWLPAreaTaxonomy> getCurrentInferredTaxonomy() {
         return this.currentInferredTaxonomy;
     }
-    
+
+    public void setCurrentDiffTaxonomy(OWLDiffPAreaTaxonomy currentStatedDiffTaxonomy) {
+        this.currentDiffTaxonomy = currentStatedDiffTaxonomy;
+    }
+
+    public OWLDiffPAreaTaxonomy getCurrentDiffTaxonomy() {
+        return this.currentDiffTaxonomy;
+    }
+
     public Set<PropertyTypeAndUsage> getCurrentPropertyUsages() {
         return currentPropertyUsages;
     }
-    
+
     public void setUseInferred(boolean useInferred) {
         this.useInferredVersion = useInferred;
     }
@@ -67,9 +79,9 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
     }
 
     public OWLPAreaTaxonomy deriveCompleteStatedTaxonomy(Set<PropertyTypeAndUsage> usages) {
-        
+
         Hierarchy<OWLConcept> currentStatedHierarchy = getOntology().getConceptHierarchy();
-           
+
         OWLPAreaTaxonomyFactory factory = new OWLPAreaTaxonomyFactory(this, usages);
         PAreaTaxonomyGenerator generator = new PAreaTaxonomyGenerator();
         return (OWLPAreaTaxonomy) generator.derivePAreaTaxonomy(factory, currentStatedHierarchy);
@@ -80,8 +92,26 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
         PAreaTaxonomyGenerator generator = new PAreaTaxonomyGenerator();
         return (OWLPAreaTaxonomy) generator.derivePAreaTaxonomy(factory, currentInferredHierarchy.get());
     }
-  
-    public void refreshOntology(){
+
+    public OWLDiffPAreaTaxonomy deriveDiffTaxonomy() {
+        OWLPAreaTaxonomy fromTaxonomy = getCurrentStatedTaxonomy();
+        OWLPAreaTaxonomy toTaxonomy = getCurrentStatedTaxonomy();
+
+        DiffPAreaTaxonomyGenerator diffTaxonomyGenerator = new DiffPAreaTaxonomyGenerator();
+
+        OWLDiffPAreaTaxonomy diffTaxonomy
+                = (OWLDiffPAreaTaxonomy) diffTaxonomyGenerator.createDiffPAreaTaxonomy(
+                        new OWLDiffPAreaTaxonomyFactory(),
+                        getOntology(),
+                        fromTaxonomy,
+                        getOntology(),
+                        toTaxonomy);
+        
+        this.currentDiffTaxonomy = diffTaxonomy;
+        return diffTaxonomy;
+    }
+
+    public void refreshOntology() {
         this.reinitialize();
     }
 

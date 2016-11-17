@@ -1,6 +1,7 @@
 package edu.njit.cs.saboc.blu.owl.protege;
 
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
 import java.awt.BorderLayout;
 import java.util.HashSet;
@@ -14,7 +15,10 @@ import org.semanticweb.owlapi.model.*;
 
 import edu.njit.cs.saboc.blu.owl.utils.owlproperties.*;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.*;
+import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomy;
+import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomyFactory;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLDisplayFrameListener;
+import edu.njit.cs.saboc.blu.owl.gui.graphframe.OWLDiffTaxonomyGraphFrame;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.OWLPAreaTaxonomyGraphFrame;
 import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
 import java.awt.Rectangle;
@@ -23,7 +27,6 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import javax.swing.JButton;
@@ -33,7 +36,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import org.protege.editor.owl.model.OWLModelManager;
-import org.protege.editor.owl.model.OWLWorkspace;
 import org.protege.editor.owl.model.event.OWLModelManagerChangeEvent;
 import org.protege.editor.owl.model.event.OWLModelManagerListener;
 import org.protege.editor.owl.model.hierarchy.OWLObjectHierarchyProvider;
@@ -53,6 +55,15 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
     private class ProtegeOWLTaxonomyPanel extends JPanel {
 
         public ProtegeOWLTaxonomyPanel(OWLPAreaTaxonomyGraphFrame graphFrame) {
+            super(new BorderLayout());
+
+            this.add(graphFrame.getContentPane(), BorderLayout.CENTER);
+        }
+    }
+    
+    private class ProtegeOWLDiffTaxonomyPanel extends JPanel {
+
+        public ProtegeOWLDiffTaxonomyPanel(OWLDiffTaxonomyGraphFrame graphFrame) {
             super(new BorderLayout());
 
             this.add(graphFrame.getContentPane(), BorderLayout.CENTER);
@@ -193,8 +204,9 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
             }
         };
 
-        graphFrame = new OWLPAreaTaxonomyGraphFrame(getMyFrame(),
-                new ProtegeOWLPAreaTaxonomyConfigurationFactory(getOWLWorkspace()), displayListener);
+        //graphFrame = new OWLPAreaTaxonomyGraphFrame(getMyFrame(),
+        //        new ProtegeOWLPAreaTaxonomyConfigurationFactory(getOWLWorkspace()), displayListener);
+        graphFrame = new OWLDiffTaxonomyGraphFrame(getMyFrame(), displayListener);
 
         useInferredBtn = new JToggleButton("Use Inferred Hierarchy");
         useInferredBtn.setEnabled(false);
@@ -204,6 +216,8 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
             OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
             ProtegeBLUOntologyDataManager dataManager = ontologyManagers.get(ontology);
+
+            
 
             log.info("BLUOWL: DataManager: " + dataManager);
 
@@ -215,7 +229,7 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
                 if (dataManager.getCurrentInferredTaxonomy().isPresent()) {
                     log.info("BLUOWL: Displaying currently inferred...");
 
-                    graphFrame.replaceInternalFrameDataWith(dataManager.getCurrentInferredTaxonomy().get());
+                    graphFrame.replaceInternalFrameDataWith(dataManager.getCurrentDiffTaxonomy());//dataManager.getCurrentInferredTaxonomy().get();
                 } else {
                     log.info("BLUOWL: Displaying new inferred...");
 
@@ -226,12 +240,13 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
                 log.info("BLUOWL: Displaying current stated...");
 
-                graphFrame.replaceInternalFrameDataWith(dataManager.getCurrentStatedTaxonomy());
+                graphFrame.replaceInternalFrameDataWith(dataManager.getCurrentDiffTaxonomy());//getCurrentStatedTaxonomy
             }
         });
 
         graphFrame.addReportButtonToMenu(useInferredBtn);
-        graphFrame.addDisplayedTaxonomyChangedListener(new OWLPAreaTaxonomyGraphFrame.DisplayedPAreaTaxonomyChangedListener() {
+       /*
+        graphFrame.addDisplayedTaxonomyChangedListener(new OWLDiffTaxonomyGraphFrame.DisplayedPAreaTaxonomyChangedListener() {
 
             @Override
             public void taxonomyDisplayed(PAreaTaxonomy taxonomy) {
@@ -280,8 +295,8 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
                 }
             }
         });
-
-        tabbedPane.add(new ProtegeOWLTaxonomyPanel(graphFrame), "OWL Partial-area Taxonomies");
+*/
+        tabbedPane.add(new ProtegeOWLDiffTaxonomyPanel(graphFrame), "OWL Partial-area Taxonomies");
 
         this.add(tabbedPane, BorderLayout.CENTER);
 
@@ -294,7 +309,7 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
         log.info("BLUOWL STATUS: Initialized");
     }
 
-    private OWLPAreaTaxonomyGraphFrame graphFrame;
+    private OWLDiffTaxonomyGraphFrame graphFrame;
 
     private JToggleButton useInferredBtn;
 
@@ -322,9 +337,11 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
         }
 
         OWLPAreaTaxonomy taxonomy = loader.deriveCompleteStatedTaxonomy(usages);
-
         loader.setCurrentStatedTaxonomy(taxonomy);
-        graphFrame.replaceInternalFrameDataWith(taxonomy);
+        
+        OWLDiffPAreaTaxonomy diffTaxonomy = loader.deriveDiffTaxonomy();
+        
+        graphFrame.replaceInternalFrameDataWith(diffTaxonomy);
 
         if (tabbedPane.getTabCount() > 1) {
             tabbedPane.remove(1);
@@ -364,9 +381,11 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
             OWLPAreaTaxonomy taxonomy = loader.deriveCompleteStatedTaxonomy(usages);
             loader.setCurrentStatedTaxonomy(taxonomy);
+            
+            OWLDiffPAreaTaxonomy diffTaxonomy = loader.deriveDiffTaxonomy();
 
             if (showTaxonomy) {
-                graphFrame.replaceInternalFrameDataWith(taxonomy);
+                graphFrame.replaceInternalFrameDataWith(diffTaxonomy);
             }
         });
 
@@ -430,9 +449,11 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
             loader.setInferredHierarchy(hierarchy);
             OWLPAreaTaxonomy inferredTaxonomy = loader.deriveCompleteInferredTaxonomy(usages);
             loader.setCurrentInferredTaxonomy(inferredTaxonomy);
+            
+            OWLDiffPAreaTaxonomy diffTaxonomy = loader.getCurrentDiffTaxonomy();
 
             if (showTaxonomy) {
-                graphFrame.replaceInternalFrameDataWith(inferredTaxonomy);
+                graphFrame.replaceInternalFrameDataWith(diffTaxonomy);//inferredTaxonomy
             }
         });
 
