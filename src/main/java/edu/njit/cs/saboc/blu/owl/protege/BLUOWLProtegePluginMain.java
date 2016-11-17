@@ -1,7 +1,5 @@
 package edu.njit.cs.saboc.blu.owl.protege;
 
-import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
-import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
 import java.awt.BorderLayout;
 import java.util.HashSet;
@@ -16,7 +14,6 @@ import org.semanticweb.owlapi.model.*;
 import edu.njit.cs.saboc.blu.owl.utils.owlproperties.*;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.*;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomy;
-import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomyFactory;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLDisplayFrameListener;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.OWLDiffTaxonomyGraphFrame;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.OWLPAreaTaxonomyGraphFrame;
@@ -206,6 +203,7 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
         //graphFrame = new OWLPAreaTaxonomyGraphFrame(getMyFrame(),
         //        new ProtegeOWLPAreaTaxonomyConfigurationFactory(getOWLWorkspace()), displayListener);
+        
         graphFrame = new OWLDiffTaxonomyGraphFrame(getMyFrame(), displayListener);
 
         useInferredBtn = new JToggleButton("Use Inferred Hierarchy");
@@ -236,11 +234,14 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
                     updateInferredTaxonomy(true);
                 }
             } else {
+                
+
                 dataManager.setUseInferred(false);
 
                 log.info("BLUOWL: Displaying current stated...");
 
                 graphFrame.replaceInternalFrameDataWith(dataManager.getCurrentDiffTaxonomy());//getCurrentStatedTaxonomy
+                
             }
         });
 
@@ -339,7 +340,7 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
         OWLPAreaTaxonomy taxonomy = loader.deriveCompleteStatedTaxonomy(usages);
         loader.setCurrentStatedTaxonomy(taxonomy);
         
-        OWLDiffPAreaTaxonomy diffTaxonomy = loader.deriveDiffTaxonomy();
+        OWLDiffPAreaTaxonomy diffTaxonomy = loader.deriveDiffTaxonomy(taxonomy);
         
         graphFrame.replaceInternalFrameDataWith(diffTaxonomy);
 
@@ -379,10 +380,10 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
             Set<PropertyTypeAndUsage> usages = loader.getCurrentPropertyUsages();
 
-            OWLPAreaTaxonomy taxonomy = loader.deriveCompleteStatedTaxonomy(usages);
-            loader.setCurrentStatedTaxonomy(taxonomy);
+            OWLPAreaTaxonomy toTaxonomy = loader.deriveCompleteStatedTaxonomy(usages);
+            //loader.setCurrentStatedTaxonomy(taxonomy);
             
-            OWLDiffPAreaTaxonomy diffTaxonomy = loader.deriveDiffTaxonomy();
+            OWLDiffPAreaTaxonomy diffTaxonomy = loader.deriveDiffTaxonomy(toTaxonomy);
 
             if (showTaxonomy) {
                 graphFrame.replaceInternalFrameDataWith(diffTaxonomy);

@@ -93,9 +93,8 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
         return (OWLPAreaTaxonomy) generator.derivePAreaTaxonomy(factory, currentInferredHierarchy.get());
     }
 
-    public OWLDiffPAreaTaxonomy deriveDiffTaxonomy() {
+    public OWLDiffPAreaTaxonomy deriveDiffTaxonomy(OWLPAreaTaxonomy toTaxonomy) {
         OWLPAreaTaxonomy fromTaxonomy = getCurrentStatedTaxonomy();
-        OWLPAreaTaxonomy toTaxonomy = getCurrentStatedTaxonomy();
 
         DiffPAreaTaxonomyGenerator diffTaxonomyGenerator = new DiffPAreaTaxonomyGenerator();
 
