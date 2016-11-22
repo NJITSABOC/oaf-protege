@@ -1,6 +1,5 @@
 package edu.njit.cs.saboc.blu.owl.protege;
 
-import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
@@ -28,6 +27,8 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
 
     private OWLPAreaTaxonomy currentStatedTaxonomy;
     private OWLDiffPAreaTaxonomy currentDiffTaxonomy;
+    private OWLPAreaTaxonomy lastUpdatedTaxonomy;
+    private OWLPAreaTaxonomy lastFixedPointTaxonomy;
 
     private Optional<OWLPAreaTaxonomy> currentInferredTaxonomy = Optional.empty();
 
@@ -56,6 +57,14 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
 
     public Optional<OWLPAreaTaxonomy> getCurrentInferredTaxonomy() {
         return this.currentInferredTaxonomy;
+    }
+
+    public void setLastUpdatedTaxonomy(OWLPAreaTaxonomy taxonomy) {
+        lastUpdatedTaxonomy = taxonomy;
+    }
+
+    public void setLastFixedPointTaxonomy(OWLPAreaTaxonomy taxonomy) {
+        lastFixedPointTaxonomy = taxonomy;
     }
 
     public void setCurrentDiffTaxonomy(OWLDiffPAreaTaxonomy currentStatedDiffTaxonomy) {
@@ -93,10 +102,15 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
         return (OWLPAreaTaxonomy) generator.derivePAreaTaxonomy(factory, currentInferredHierarchy.get());
     }
 
-    public OWLDiffPAreaTaxonomy deriveDiffTaxonomy() {
-        OWLPAreaTaxonomy fromTaxonomy = getCurrentStatedTaxonomy();
-        OWLPAreaTaxonomy toTaxonomy = getCurrentStatedTaxonomy();
+    public OWLDiffPAreaTaxonomy deriveDiffLastUpdated(OWLPAreaTaxonomy toTaxonomy) {
+        return deriveDiffTaxonomy(lastUpdatedTaxonomy, toTaxonomy);
+    }
 
+    public OWLDiffPAreaTaxonomy deriveDiffFixedPoint(OWLPAreaTaxonomy toTaxonomy) {
+        return deriveDiffTaxonomy(lastFixedPointTaxonomy, toTaxonomy);
+    }
+
+    public OWLDiffPAreaTaxonomy deriveDiffTaxonomy(OWLPAreaTaxonomy fromTaxonomy, OWLPAreaTaxonomy toTaxonomy) {
         DiffPAreaTaxonomyGenerator diffTaxonomyGenerator = new DiffPAreaTaxonomyGenerator();
 
         OWLDiffPAreaTaxonomy diffTaxonomy
@@ -106,7 +120,7 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
                         fromTaxonomy,
                         getOntology(),
                         toTaxonomy);
-        
+
         this.currentDiffTaxonomy = diffTaxonomy;
         return diffTaxonomy;
     }
