@@ -48,6 +48,7 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
     public static final Logger log = Logger.getLogger(BLUOWLProtegePluginMain.class);
 
     private final HashMap<OWLOntology, ProtegeBLUOntologyDataManager> ontologyManagers = new HashMap<>();
+    private boolean diffWithFixedPoint = false;
 
     private class ProtegeOWLTaxonomyPanel extends JPanel {
 
@@ -57,7 +58,7 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
             this.add(graphFrame.getContentPane(), BorderLayout.CENTER);
         }
     }
-    
+
     private class ProtegeOWLDiffTaxonomyPanel extends JPanel {
 
         public ProtegeOWLDiffTaxonomyPanel(OWLDiffTaxonomyGraphFrame graphFrame) {
@@ -215,8 +216,6 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
             ProtegeBLUOntologyDataManager dataManager = ontologyManagers.get(ontology);
 
-            
-
             log.info("BLUOWL: DataManager: " + dataManager);
 
             if (useInferredBtn.isSelected()) {
@@ -246,7 +245,9 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
         });
 
         graphFrame.addReportButtonToMenu(useInferredBtn);
-       /*
+        
+        
+        /*
         graphFrame.addDisplayedTaxonomyChangedListener(new OWLDiffTaxonomyGraphFrame.DisplayedPAreaTaxonomyChangedListener() {
 
             @Override
@@ -296,7 +297,9 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
                 }
             }
         });
-*/
+         */
+        
+        
         tabbedPane.add(new ProtegeOWLDiffTaxonomyPanel(graphFrame), "OWL Partial-area Taxonomies");
 
         this.add(tabbedPane, BorderLayout.CENTER);
@@ -324,24 +327,32 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
             ontologyManagers.put(ontology, new ProtegeBLUOntologyDataManager(ontologyManager, null, ontology.getOntologyID().toString(), ontology));
         }
 
-        ProtegeBLUOntologyDataManager loader = ontologyManagers.get(ontology);
+        ProtegeBLUOntologyDataManager dataManager = ontologyManagers.get(ontology);
 
         Set<PropertyTypeAndUsage> usages = new HashSet<>();
 
-        if (loader.getOntologyMetrics().totalOPWithDomainCount > 0) {
+        if (dataManager.getOntologyMetrics().totalOPWithDomainCount > 0) {
             usages.add(PropertyTypeAndUsage.OP_DOMAIN);
-        } else if (loader.getOntologyMetrics().totalOPWithRestrictionCount > 1) {
+        } else if (dataManager.getOntologyMetrics().totalOPWithRestrictionCount > 1) {
             usages.add(PropertyTypeAndUsage.OP_DOMAIN);
         } else {
             // TODO: Figure out whats really available...
             usages.add(PropertyTypeAndUsage.OP_DOMAIN);
         }
 
-        OWLPAreaTaxonomy taxonomy = loader.deriveCompleteStatedTaxonomy(usages);
-        loader.setCurrentStatedTaxonomy(taxonomy);
+        OWLPAreaTaxonomy toTaxonomy = dataManager.deriveCompleteStatedTaxonomy(usages);
+        dataManager.setCurrentStatedTaxonomy(toTaxonomy);
+
+        dataManager.setLastUpdatedTaxonomy(toTaxonomy);
+        dataManager.setLastFixedPointTaxonomy(toTaxonomy);
         
-        OWLDiffPAreaTaxonomy diffTaxonomy = loader.deriveDiffTaxonomy(taxonomy);
-        
+        OWLDiffPAreaTaxonomy diffTaxonomy;
+        if (diffWithFixedPoint) {
+            diffTaxonomy = dataManager.deriveDiffFixedPoint(toTaxonomy);
+        } else {
+            diffTaxonomy = dataManager.deriveDiffLastUpdated(toTaxonomy);
+        }
+
         graphFrame.replaceInternalFrameDataWith(diffTaxonomy);
 
         if (tabbedPane.getTabCount() > 1) {
@@ -373,17 +384,24 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
             log.info("BLUOWL: Updating stated taxonomy");
 
-            OWLOntology ontology = getOWLModelManager().getActiveOntology();
+            OWLOntology ontology = getOWLModelManager().getActiveOntology();                    
 
-            ProtegeBLUOntologyDataManager loader = ontologyManagers.get(ontology);
-            loader.refreshOntology();
+            ProtegeBLUOntologyDataManager dataManager = ontologyManagers.get(ontology);         
+            dataManager.refreshOntology();
 
-            Set<PropertyTypeAndUsage> usages = loader.getCurrentPropertyUsages();
+            Set<PropertyTypeAndUsage> usages = dataManager.getCurrentPropertyUsages();
 
-            OWLPAreaTaxonomy toTaxonomy = loader.deriveCompleteStatedTaxonomy(usages);
-            //loader.setCurrentStatedTaxonomy(taxonomy);
+            OWLPAreaTaxonomy toTaxonomy = dataManager.deriveCompleteStatedTaxonomy(usages);           
+            dataManager.setCurrentStatedTaxonomy(toTaxonomy);
+
+            OWLDiffPAreaTaxonomy diffTaxonomy;
+            if (diffWithFixedPoint) {
+                diffTaxonomy = dataManager.deriveDiffFixedPoint(toTaxonomy);
+            } else {
+                diffTaxonomy = dataManager.deriveDiffLastUpdated(toTaxonomy);
+            }
             
-            OWLDiffPAreaTaxonomy diffTaxonomy = loader.deriveDiffTaxonomy(toTaxonomy);
+            dataManager.setLastUpdatedTaxonomy(toTaxonomy);
 
             if (showTaxonomy) {
                 graphFrame.replaceInternalFrameDataWith(diffTaxonomy);
@@ -450,7 +468,7 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
             loader.setInferredHierarchy(hierarchy);
             OWLPAreaTaxonomy inferredTaxonomy = loader.deriveCompleteInferredTaxonomy(usages);
             loader.setCurrentInferredTaxonomy(inferredTaxonomy);
-            
+
             OWLDiffPAreaTaxonomy diffTaxonomy = loader.getCurrentDiffTaxonomy();
 
             if (showTaxonomy) {
