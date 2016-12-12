@@ -10,6 +10,8 @@ import java.util.Hashtable;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JSlider;
+import javax.swing.JToggleButton;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -19,7 +21,9 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
 
     private final DiffDerivationTypeManager derivationTypeManager;
     
-    private final Dimension panelSize = new Dimension(170, 50);
+    private final Dimension panelSize = new Dimension(250, 50);
+    
+    private final JToggleButton btnUseInferredHierarchy;
     
     public DerivationSelectionWidget(
             AbNDisplayPanel displayPanel, 
@@ -31,7 +35,7 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         
         this.setLayout(new BorderLayout());
         
-        JButton resetButton = new JButton("<html><div align='center'>Set<br>Fixed<br>Point");
+        JButton resetButton = new JButton("<html><div align='center'>Reset<br>Fixed<br>Point");
         resetButton.addActionListener( (ae) -> {
             derivationTypeManager.resetFixedPointDerivation();
         });
@@ -44,7 +48,6 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         derivationTypeSlider.setPaintLabels(true);
         
         derivationTypeSlider.setPreferredSize(new Dimension(100, 50));
-        
         
         Hashtable labelTable = new Hashtable();
         labelTable.put(0, new JLabel("Fixed Point"));
@@ -65,6 +68,24 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         }); 
         
         this.add(derivationTypeSlider, BorderLayout.CENTER);
+        
+        this.btnUseInferredHierarchy = new JToggleButton("<html><div align='center'>Use Inferred<br>Hierarchy");
+        this.btnUseInferredHierarchy.setEnabled(false);
+        this.btnUseInferredHierarchy.addActionListener( (ae) -> {
+            if(btnUseInferredHierarchy.isSelected()) {
+                derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Inferred);
+            } else {
+                derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Stated);
+            }
+        });
+        
+        this.add(btnUseInferredHierarchy, BorderLayout.EAST);
+    }
+    
+    public void setInferredHierarchyAvailable(boolean value) {
+        SwingUtilities.invokeLater( () -> {
+            btnUseInferredHierarchy.setEnabled(value);
+        });
     }
 
     @Override

@@ -1,5 +1,6 @@
 package edu.njit.cs.saboc.blu.owl.protege;
 
+import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
 import edu.njit.cs.saboc.blu.core.graph.BluGraph;
 import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffPAreaBluGraph;
 import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.SinglyRootedNodeLabelCreator;
@@ -20,71 +21,96 @@ import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAre
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLDisplayFrameListener;
 import edu.njit.cs.saboc.blu.owl.gui.gep.panels.pareataxonomy.diff.configuration.OWLDiffPAreaTaxonomyConfiguration;
 import edu.njit.cs.saboc.blu.owl.gui.gep.panels.pareataxonomy.diff.configuration.OWLDiffPAreaTaxonomyConfigurationFactory;
+import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
 import edu.njit.cs.saboc.blu.owl.protege.DiffDerivationTypeManager.DerivationType;
 import edu.njit.cs.saboc.blu.owl.protege.DiffDerivationTypeManager.DerivationTypeChangedListener;
+import edu.njit.cs.saboc.blu.owl.protege.DiffDerivationTypeManager.RelationshipType;
 import edu.njit.cs.saboc.blu.owl.protege.gui.gep.widgets.DerivationSelectionWidget;
 import edu.njit.cs.saboc.blu.owl.protege.gui.gep.widgets.ProtegeAbNExplorationPanel;
 import java.awt.Rectangle;
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.swing.JInternalFrame;
 import javax.swing.SwingUtilities;
 import org.protege.editor.owl.model.OWLModelManager;
-import org.protege.editor.owl.model.event.OWLModelManagerChangeEvent;
 import org.protege.editor.owl.model.event.OWLModelManagerListener;
+import org.protege.editor.owl.model.hierarchy.OWLObjectHierarchyProvider;
 import org.protege.editor.owl.model.io.IOListener;
 import org.protege.editor.owl.model.io.IOListenerEvent;
 import org.semanticweb.owlapi.change.AddAxiomData;
 import org.semanticweb.owlapi.change.OWLOntologyChangeData;
 import org.semanticweb.owlapi.change.OWLOntologyChangeRecord;
+import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
 public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
     private static final long serialVersionUID = -4515710047558710080L;
     public static final Logger log = Logger.getLogger(BLUOWLProtegePluginMain.class);
-    
+
     private final ProtegeAbNExplorationPanel explorationPanel = new ProtegeAbNExplorationPanel();
-    
+
     private final HashMap<OWLOntology, ProtegeBLUOntologyDataManager> ontologyManagers = new HashMap<>();
-    
+
     private final DiffDerivationTypeManager derivationTypeManager = new DiffDerivationTypeManager();
 
-    private final OWLModelManagerListener modelListener = new OWLModelManagerListener() {
+    private DerivationSelectionWidget derivationSelectionWidget;
 
-        public void handleChange(OWLModelManagerChangeEvent event) {
-            log.info("BLUOWL Event: " + event.getType());
+    private final OWLModelManagerListener modelListener = (event) -> {
 
-            switch (event.getType()) {
-                case ACTIVE_ONTOLOGY_CHANGED:
-                    initializeBLUOWL();
-                    break;
+        log.info("BLUOWL Event: " + event.getType());
 
-                case ONTOLOGY_VISIBILITY_CHANGED:
-                case ENTITY_RENDERER_CHANGED:
-                case ENTITY_RENDERING_CHANGED:
-                    break;
+        OWLReasoner reasoner = getOWLModelManager().getOWLReasonerManager().getCurrentReasoner();
+        
+        switch (event.getType()) {
+            case ACTIVE_ONTOLOGY_CHANGED:
+                initializeBLUOWL();
+                break;
 
-                case REASONER_CHANGED:
-                    log.info("BLUOWL: Reasoner Changed");
+            case ONTOLOGY_VISIBILITY_CHANGED:
+            case ENTITY_RENDERER_CHANGED:
+            case ENTITY_RENDERING_CHANGED:
+                break;
 
-                    break;
+            case REASONER_CHANGED:
+                log.info("BLUOWL: Reasoner Changed");
+                
+                if (reasoner.isConsistent()) {
+                    derivationSelectionWidget.setInferredHierarchyAvailable(true);
+                    derivationTypeManager.setInferredHierarchyAvailable(true);
+                } else {
+                    derivationSelectionWidget.setInferredHierarchyAvailable(false);
+                    derivationTypeManager.setInferredHierarchyAvailable(false);
+                }
 
-                case ABOUT_TO_CLASSIFY:
-                    
-                    break;
+                break;
 
-                case ONTOLOGY_CLASSIFIED:
-                    
-                    break;
+            case ABOUT_TO_CLASSIFY:
+                derivationSelectionWidget.setInferredHierarchyAvailable(false);
 
-                case ONTOLOGY_CREATED:
-                case ONTOLOGY_LOADED:
-                case ONTOLOGY_RELOADED:
-                case ONTOLOGY_SAVED:
+                break;
 
-                default:
-            }
+            case ONTOLOGY_CLASSIFIED:
+                              
+                if (reasoner.isConsistent()) {
+                    derivationSelectionWidget.setInferredHierarchyAvailable(true);
+                    derivationTypeManager.setInferredHierarchyAvailable(true);
+                } else {
+                    derivationSelectionWidget.setInferredHierarchyAvailable(false);
+                    derivationTypeManager.setInferredHierarchyAvailable(false);
+                }
+                
+                break;
+
+            case ONTOLOGY_CREATED:
+            case ONTOLOGY_LOADED:
+            case ONTOLOGY_RELOADED:
+            case ONTOLOGY_SAVED:
+
+            default:
         }
     };
 
@@ -112,35 +138,31 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
     };
 
-    private final OWLOntologyChangeListener changeListener = new OWLOntologyChangeListener() {
+    private final OWLOntologyChangeListener changeListener = (List<? extends OWLOntologyChange> changes) -> {
+        changes.forEach((OWLOntologyChange change) -> {
+            OWLOntologyChangeData changeData = change.getChangeData();
+            OWLOntologyChangeRecord changeRecord = change.getChangeRecord();
 
-        public void ontologiesChanged(List<? extends OWLOntologyChange> changes) {
+            if (change.isAddAxiom()) {
+                AddAxiom addAxiom = (AddAxiom) change;
 
-            changes.forEach((OWLOntologyChange change) -> {
-                OWLOntologyChangeData changeData = change.getChangeData();
-                OWLOntologyChangeRecord changeRecord = change.getChangeRecord();
+                AddAxiomData addAxiomData = addAxiom.getChangeData();
 
-                if (change.isAddAxiom()) {
-                    AddAxiom addAxiom = (AddAxiom) change;
+            } else if (change.isAxiomChange()) {
+                OWLAxiomChange changeAxiom = (OWLAxiomChange) change;
 
-                    AddAxiomData addAxiomData = addAxiom.getChangeData();
+            } else if (change.isImportChange()) {
+                ImportChange importChange = (ImportChange) change;
 
-                } else if (change.isAxiomChange()) {
-                    OWLAxiomChange changeAxiom = (OWLAxiomChange) change;
+            } else if (change.isRemoveAxiom()) {
+                RemoveAxiom removeAxiom = (RemoveAxiom) change;
 
-                } else if (change.isImportChange()) {
-                    ImportChange importChange = (ImportChange) change;
+            } else {
 
-                } else if (change.isRemoveAxiom()) {
-                    RemoveAxiom removeAxiom = (RemoveAxiom) change;
+            }
+        });
 
-                } else {
-
-                }
-            });
-
-            updateStatedTaxonomy(true);
-        }
+        updateTaxonomyDisplay();
     };
 
     private OWLDisplayFrameListener displayListener;
@@ -168,15 +190,19 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
                     contentFrame.toFront();
                     contentFrame.repaint();
                 });
-
             }
         };
-        
+
         derivationTypeManager.addDerivationTypeChangedListener(new DerivationTypeChangedListener() {
 
             @Override
-            public void derivationTypeChange(DerivationType newDerivationType) {
-                updateStatedTaxonomy(true);
+            public void derivationTypeChanged(DerivationType newDerivationType) {
+                updateTaxonomyDisplay();
+            }
+
+            @Override
+            public void relationshipTypeChanged(DiffDerivationTypeManager.RelationshipType version) {
+                updateTaxonomyDisplay();
             }
 
             @Override
@@ -184,14 +210,19 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
                 OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
                 ProtegeBLUOntologyDataManager dataManager = ontologyManagers.get(ontology);
-                dataManager.setLastFixedPointTaxonomy(dataManager.getCurrentStatedTaxonomy());
-
-                updateStatedTaxonomy(true);
+                dataManager.setLastFixedPointStatedTaxonomy(dataManager.getCurrentStatedTaxonomy());
+                
+                if(dataManager.getCurrentInferredTaxonomy().isPresent()) {
+                    dataManager.setLastFixedPointInferredTaxonomy(dataManager.getCurrentInferredTaxonomy().get());
+                }
+                
+                updateTaxonomyDisplay();
             }
         });
 
-        explorationPanel.getDisplayPanel().addWidget(
-                new DerivationSelectionWidget(explorationPanel.getDisplayPanel(), derivationTypeManager));
+        this.derivationSelectionWidget = new DerivationSelectionWidget(explorationPanel.getDisplayPanel(), derivationTypeManager);
+
+        explorationPanel.getDisplayPanel().addWidget(derivationSelectionWidget);
 
         this.add(explorationPanel, BorderLayout.CENTER);
 
@@ -218,6 +249,7 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
         Set<PropertyTypeAndUsage> usages = new HashSet<>();
 
+        /*
         if (dataManager.getOntologyMetrics().totalOPWithDomainCount > 0) {
             usages.add(PropertyTypeAndUsage.OP_DOMAIN);
         } else if (dataManager.getOntologyMetrics().totalOPWithRestrictionCount > 0) {
@@ -226,19 +258,23 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
             // TODO: Figure out whats really available...
             usages.add(PropertyTypeAndUsage.OP_DOMAIN);
         }
+        */
+        
+        usages.add(PropertyTypeAndUsage.OP_RESTRICTION);
+        usages.add(PropertyTypeAndUsage.OP_EQUIV);
 
         OWLPAreaTaxonomy toTaxonomy = dataManager.deriveCompleteStatedTaxonomy(usages);
         dataManager.setCurrentStatedTaxonomy(toTaxonomy);
 
-        dataManager.setLastUpdatedTaxonomy(toTaxonomy);
-        dataManager.setLastFixedPointTaxonomy(toTaxonomy);
-        
+        dataManager.setLastUpdatedStatedTaxonomy(toTaxonomy);
+        dataManager.setLastFixedPointStatedTaxonomy(toTaxonomy);
+
         OWLDiffPAreaTaxonomy diffTaxonomy;
-        
+
         if (derivationTypeManager.getDerivationType() == DerivationType.FixedPoint) {
-            diffTaxonomy = dataManager.deriveDiffFixedPoint(toTaxonomy);
+            diffTaxonomy = dataManager.deriveStatedDiffTaxonomyFixedPoint(toTaxonomy);
         } else {
-            diffTaxonomy = dataManager.deriveDiffLastUpdated(toTaxonomy);
+            diffTaxonomy = dataManager.deriveStatedDiffTaxonomyProgressive(toTaxonomy);
         }
 
         displayDiffPAreaTaxonomy(diffTaxonomy);
@@ -259,6 +295,13 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
         return f;
     }
+    
+    private void updateTaxonomyDisplay() {
+        boolean useStated = derivationTypeManager.getRelationshipType().equals(RelationshipType.Stated);
+
+        updateStatedTaxonomy(useStated);
+        updateInferredTaxonomy(!useStated);
+    }
 
     private void updateStatedTaxonomy(boolean showTaxonomy) {
 
@@ -266,25 +309,25 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
             log.info("BLUOWL: Updating stated taxonomy");
 
-            OWLOntology ontology = getOWLModelManager().getActiveOntology();                    
+            OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
-            ProtegeBLUOntologyDataManager dataManager = ontologyManagers.get(ontology);         
+            ProtegeBLUOntologyDataManager dataManager = ontologyManagers.get(ontology);
             dataManager.refreshOntology();
 
             Set<PropertyTypeAndUsage> usages = dataManager.getCurrentPropertyUsages();
 
-            OWLPAreaTaxonomy toTaxonomy = dataManager.deriveCompleteStatedTaxonomy(usages);           
+            OWLPAreaTaxonomy toTaxonomy = dataManager.deriveCompleteStatedTaxonomy(usages);
             dataManager.setCurrentStatedTaxonomy(toTaxonomy);
 
             OWLDiffPAreaTaxonomy diffTaxonomy;
-            
+
             if (derivationTypeManager.getDerivationType() == DerivationType.FixedPoint) {
-                diffTaxonomy = dataManager.deriveDiffFixedPoint(toTaxonomy);
+                diffTaxonomy = dataManager.deriveStatedDiffTaxonomyFixedPoint(toTaxonomy);
             } else {
-                diffTaxonomy = dataManager.deriveDiffLastUpdated(toTaxonomy);
+                diffTaxonomy = dataManager.deriveStatedDiffTaxonomyProgressive(toTaxonomy);
             }
-            
-            dataManager.setLastUpdatedTaxonomy(toTaxonomy);
+
+            dataManager.setLastUpdatedStatedTaxonomy(toTaxonomy);
 
             if (showTaxonomy) {
                 displayDiffPAreaTaxonomy(diffTaxonomy);
@@ -293,23 +336,111 @@ public class BLUOWLProtegePluginMain extends AbstractOWLViewComponent {
 
         taxonomyUpdateThread.start();
     }
-    
+
+    private void updateInferredTaxonomy(boolean showTaxonomy) {
+
+        if (!derivationTypeManager.inferredHierarchyAvailable()) {
+            return;
+        }
+
+        Thread loadThread = new Thread(() -> {
+            
+            log.info("BLUOWL: Updating inferred taxonomy");
+            
+            OWLOntology ontology = getOWLModelManager().getActiveOntology();
+            ProtegeBLUOntologyDataManager dataManager = ontologyManagers.get(ontology);
+
+            Set<PropertyTypeAndUsage> usages = dataManager.getCurrentPropertyUsages();
+            
+            Hierarchy<OWLConcept> inferredHierarchy = buildInferredHierarchy(dataManager);
+
+            dataManager.setInferredHierarchy(inferredHierarchy); // Does this belong here?
+
+            OWLPAreaTaxonomy toTaxonomy = dataManager.deriveCompleteInferredTaxonomy(usages);
+            dataManager.setCurrentInferredTaxonomy(toTaxonomy);
+
+            OWLDiffPAreaTaxonomy diffTaxonomy;
+
+            if (derivationTypeManager.getDerivationType() == DerivationType.FixedPoint) {
+                diffTaxonomy = dataManager.deriveInferredDiffTaxonomyFixedPoint(toTaxonomy);
+            } else {
+                diffTaxonomy = dataManager.deriveInferredDiffTaxonomyProgressive(toTaxonomy);
+            }
+
+            dataManager.setLastUpdatedInferredTaxonomy(toTaxonomy);
+
+            OWLPAreaTaxonomy inferredTaxonomy = dataManager.deriveCompleteInferredTaxonomy(usages);
+            dataManager.setCurrentInferredTaxonomy(inferredTaxonomy);
+
+            if (showTaxonomy) {
+                displayDiffPAreaTaxonomy(diffTaxonomy);
+            }
+        });
+
+        loadThread.start();
+    }
+
+    private Hierarchy<OWLConcept> buildInferredHierarchy(ProtegeBLUOntologyDataManager dataManager) {
+
+        OWLModelManager modelManager = getOWLModelManager();
+
+        OWLObjectHierarchyProvider<OWLClass> protegeInferredHierarchy = modelManager.getOWLHierarchyManager().getInferredOWLClassHierarchyProvider();
+
+        OWLConcept root = dataManager.getOntology().getOWLConceptFor(modelManager.getOWLDataFactory().getOWLThing());
+
+        Hierarchy<OWLConcept> oafInferredHierarchy = new Hierarchy<>(root);
+
+        Set<OWLConcept> processed = new HashSet<>();
+        Set<OWLConcept> inQueue = new HashSet<>();
+
+        Queue<OWLConcept> queue = new ArrayDeque<>();
+
+        queue.add(root);
+        inQueue.add(root);
+
+        while (!queue.isEmpty()) {
+            OWLConcept cls = queue.remove();
+
+            processed.add(cls);
+            inQueue.remove(cls);
+
+            Set<OWLClass> children = protegeInferredHierarchy.getChildren(cls.getCls());
+
+            Set<OWLConcept> childrenConcepts = children.stream().map((childCls) -> {
+                return dataManager.getOntology().getOWLConceptFor(childCls);
+            }).collect(Collectors.toSet());
+
+            childrenConcepts.forEach((child) -> {
+                oafInferredHierarchy.addEdge(child, cls);
+
+                if (!inQueue.contains(child) && !processed.contains(child)) {
+                    queue.add(child);
+                    inQueue.add(child);
+                }
+            });
+        }
+        
+        return oafInferredHierarchy;
+    }
+
     private void displayDiffPAreaTaxonomy(OWLDiffPAreaTaxonomy diffTaxonomy) {
-        OWLDiffPAreaTaxonomyConfigurationFactory configFactory = new OWLDiffPAreaTaxonomyConfigurationFactory();
-        OWLDiffPAreaTaxonomyConfiguration config = configFactory.createConfiguration(diffTaxonomy, displayListener);
-        
-        BluGraph graph = new DiffPAreaBluGraph(
-                getMyFrame(),
-                diffTaxonomy,
-                new SinglyRootedNodeLabelCreator(),
-                config);
-        
-        graph.setBounds(0, 0, graph.getAbNWidth(), graph.getAbNHeight());
-        
-        explorationPanel.initialize(graph, config, new DiffTaxonomyPainter());
-        
-        explorationPanel.revalidate();
-        explorationPanel.repaint();
+        SwingUtilities.invokeLater(() -> {
+            OWLDiffPAreaTaxonomyConfigurationFactory configFactory = new OWLDiffPAreaTaxonomyConfigurationFactory();
+            OWLDiffPAreaTaxonomyConfiguration config = configFactory.createConfiguration(diffTaxonomy, displayListener);
+
+            BluGraph graph = new DiffPAreaBluGraph(
+                    getMyFrame(),
+                    diffTaxonomy,
+                    new SinglyRootedNodeLabelCreator(),
+                    config);
+
+            graph.setBounds(0, 0, graph.getAbNWidth(), graph.getAbNHeight());
+
+            explorationPanel.initialize(graph, config, new DiffTaxonomyPainter());
+
+            explorationPanel.revalidate();
+            explorationPanel.repaint();
+        });
     }
 
     protected void disposeOWLView() {

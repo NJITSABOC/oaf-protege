@@ -22,96 +22,60 @@ import org.semanticweb.owlapi.model.OWLOntologyManager;
  */
 public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
 
-    private boolean useInferredVersion = false;
-    private Optional<Hierarchy<OWLConcept>> currentInferredHierarchy = Optional.empty();
-
     private OWLPAreaTaxonomy currentStatedTaxonomy;
-    private OWLDiffPAreaTaxonomy currentDiffTaxonomy;
-    private OWLPAreaTaxonomy lastUpdatedTaxonomy;
-    private OWLPAreaTaxonomy lastFixedPointTaxonomy;
-
+    
+    private OWLPAreaTaxonomy lastUpdatedStatedTaxonomy;
+    private OWLPAreaTaxonomy lastFixedPointStatedTaxonomy;
+    
+    
+    private Optional<Hierarchy<OWLConcept>> currentInferredHierarchy = Optional.empty();
+    
     private Optional<OWLPAreaTaxonomy> currentInferredTaxonomy = Optional.empty();
-
-    private Set<PropertyTypeAndUsage> currentPropertyUsages;
-
+    
+    private Optional<OWLPAreaTaxonomy> lastUpdatedInferredTaxonomy = Optional.empty();
+    private Optional<OWLPAreaTaxonomy> lastFixedPointInferredTaxonomy = Optional.empty();
+    
     public ProtegeBLUOntologyDataManager(OWLOntologyManager manager, File ontologyFile, String ontologyName, OWLOntology ontology) {
         super(manager, ontologyFile, ontologyName, ontology);
     }
 
     public void setCurrentStatedTaxonomy(OWLPAreaTaxonomy currentStatedTaxonomy) {
         this.currentStatedTaxonomy = currentStatedTaxonomy;
-        this.currentPropertyUsages = currentStatedTaxonomy.getPropertyTypesAndUsages();
     }
 
     public OWLPAreaTaxonomy getCurrentStatedTaxonomy() {
         return currentStatedTaxonomy;
     }
 
-    public void setCurrentInferredTaxonomy(OWLPAreaTaxonomy currentInferredTaxonomy) {
-        this.currentInferredTaxonomy = Optional.ofNullable(currentInferredTaxonomy);
-
-        if (currentInferredTaxonomy != null) {
-            this.currentPropertyUsages = currentInferredTaxonomy.getPropertyTypesAndUsages();
-        }
+    public void setLastUpdatedStatedTaxonomy(OWLPAreaTaxonomy taxonomy) {
+        lastUpdatedStatedTaxonomy = taxonomy;
     }
 
-    public Optional<OWLPAreaTaxonomy> getCurrentInferredTaxonomy() {
-        return this.currentInferredTaxonomy;
+    public void setLastFixedPointStatedTaxonomy(OWLPAreaTaxonomy taxonomy) {
+        lastFixedPointStatedTaxonomy = taxonomy;
     }
-
-    public void setLastUpdatedTaxonomy(OWLPAreaTaxonomy taxonomy) {
-        lastUpdatedTaxonomy = taxonomy;
-    }
-
-    public void setLastFixedPointTaxonomy(OWLPAreaTaxonomy taxonomy) {
-        lastFixedPointTaxonomy = taxonomy;
-    }
-
-    public void setCurrentDiffTaxonomy(OWLDiffPAreaTaxonomy currentStatedDiffTaxonomy) {
-        this.currentDiffTaxonomy = currentStatedDiffTaxonomy;
-    }
-
-    public OWLDiffPAreaTaxonomy getCurrentDiffTaxonomy() {
-        return this.currentDiffTaxonomy;
-    }
-
+    
     public Set<PropertyTypeAndUsage> getCurrentPropertyUsages() {
-        return currentPropertyUsages;
-    }
-
-    public void setUseInferred(boolean useInferred) {
-        this.useInferredVersion = useInferred;
-    }
-
-    public boolean useInferredVersion() {
-        return useInferredVersion;
+        return currentStatedTaxonomy.getPropertyTypesAndUsages();
     }
 
     public OWLPAreaTaxonomy deriveCompleteStatedTaxonomy(Set<PropertyTypeAndUsage> usages) {
-
         Hierarchy<OWLConcept> currentStatedHierarchy = getOntology().getConceptHierarchy();
 
         OWLPAreaTaxonomyFactory factory = new OWLPAreaTaxonomyFactory(this, usages);
         PAreaTaxonomyGenerator generator = new PAreaTaxonomyGenerator();
         return (OWLPAreaTaxonomy) generator.derivePAreaTaxonomy(factory, currentStatedHierarchy);
     }
-
-    public OWLPAreaTaxonomy deriveCompleteInferredTaxonomy(Set<PropertyTypeAndUsage> usages) {
-        OWLPAreaTaxonomyFactory factory = new OWLPAreaTaxonomyFactory(this, usages);
-        PAreaTaxonomyGenerator generator = new PAreaTaxonomyGenerator();
-        return (OWLPAreaTaxonomy) generator.derivePAreaTaxonomy(factory, currentInferredHierarchy.get());
+    
+    public OWLDiffPAreaTaxonomy deriveStatedDiffTaxonomyProgressive(OWLPAreaTaxonomy toTaxonomy) {
+        return deriveStatedDiffTaxonomy(lastUpdatedStatedTaxonomy, toTaxonomy);
     }
 
-
-    public OWLDiffPAreaTaxonomy deriveDiffLastUpdated(OWLPAreaTaxonomy toTaxonomy) {
-        return deriveDiffTaxonomy(lastUpdatedTaxonomy, toTaxonomy);
+    public OWLDiffPAreaTaxonomy deriveStatedDiffTaxonomyFixedPoint(OWLPAreaTaxonomy toTaxonomy) {
+        return deriveStatedDiffTaxonomy(lastFixedPointStatedTaxonomy, toTaxonomy);
     }
 
-    public OWLDiffPAreaTaxonomy deriveDiffFixedPoint(OWLPAreaTaxonomy toTaxonomy) {
-        return deriveDiffTaxonomy(lastFixedPointTaxonomy, toTaxonomy);
-    }
-
-    public OWLDiffPAreaTaxonomy deriveDiffTaxonomy(OWLPAreaTaxonomy fromTaxonomy, OWLPAreaTaxonomy toTaxonomy) {
+    public OWLDiffPAreaTaxonomy deriveStatedDiffTaxonomy(OWLPAreaTaxonomy fromTaxonomy, OWLPAreaTaxonomy toTaxonomy) {
         DiffPAreaTaxonomyGenerator diffTaxonomyGenerator = new DiffPAreaTaxonomyGenerator();
 
         OWLDiffPAreaTaxonomy diffTaxonomy
@@ -122,7 +86,6 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
                         getOntology(),
                         toTaxonomy);
 
-        this.currentDiffTaxonomy = diffTaxonomy;
         return diffTaxonomy;
     }
 
@@ -132,5 +95,44 @@ public class ProtegeBLUOntologyDataManager extends OAFOntologyDataManager {
 
     public void setInferredHierarchy(Hierarchy<OWLConcept> hierarchy) {
         this.currentInferredHierarchy = Optional.of(hierarchy);
+    }
+    
+    public void setCurrentInferredTaxonomy(OWLPAreaTaxonomy currentInferredTaxonomy) {
+        this.currentInferredTaxonomy = Optional.of(currentInferredTaxonomy);
+        
+        if(!lastUpdatedInferredTaxonomy.isPresent()) {
+            lastUpdatedInferredTaxonomy = Optional.of(currentInferredTaxonomy);
+        }
+        
+        if(!lastFixedPointInferredTaxonomy.isPresent()) {
+            lastFixedPointInferredTaxonomy = Optional.of(currentInferredTaxonomy);
+        }
+    }
+    
+    public Optional<OWLPAreaTaxonomy> getCurrentInferredTaxonomy() {
+        return this.currentInferredTaxonomy;
+    }
+    
+    public OWLDiffPAreaTaxonomy deriveInferredDiffTaxonomyProgressive(OWLPAreaTaxonomy toTaxonomy) {
+        return deriveStatedDiffTaxonomy(lastUpdatedInferredTaxonomy.get(), toTaxonomy);
+    }
+
+    public OWLDiffPAreaTaxonomy deriveInferredDiffTaxonomyFixedPoint(OWLPAreaTaxonomy toTaxonomy) {
+        return deriveStatedDiffTaxonomy(lastFixedPointInferredTaxonomy.get(), toTaxonomy);
+    }
+    
+    public OWLPAreaTaxonomy deriveCompleteInferredTaxonomy(Set<PropertyTypeAndUsage> usages) {
+        OWLPAreaTaxonomyFactory factory = new OWLPAreaTaxonomyFactory(this, usages);
+        PAreaTaxonomyGenerator generator = new PAreaTaxonomyGenerator();
+        
+        return (OWLPAreaTaxonomy) generator.derivePAreaTaxonomy(factory, currentInferredHierarchy.get());
+    }
+    
+    public void setLastUpdatedInferredTaxonomy(OWLPAreaTaxonomy taxonomy) {
+        this.lastUpdatedInferredTaxonomy = Optional.of(taxonomy);
+    }
+
+    public void setLastFixedPointInferredTaxonomy(OWLPAreaTaxonomy taxonomy) {
+        this.lastFixedPointInferredTaxonomy = Optional.of(taxonomy);
     }
 }

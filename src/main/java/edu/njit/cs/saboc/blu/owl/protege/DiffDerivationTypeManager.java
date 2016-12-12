@@ -8,13 +8,20 @@ import java.util.ArrayList;
  */
 public class DiffDerivationTypeManager {
     
+    public static enum RelationshipType {
+        Stated,
+        Inferred
+    }
+    
     public static enum DerivationType {
         FixedPoint,
         Progressive
     }
     
     public interface DerivationTypeChangedListener {
-        public void derivationTypeChange(DerivationType newDerivationType);
+        public void derivationTypeChanged(DerivationType newDerivationType);
+        
+        public void relationshipTypeChanged(RelationshipType version);
         
         public void resetFixedPointStart();
     }
@@ -22,6 +29,9 @@ public class DiffDerivationTypeManager {
     private final ArrayList<DerivationTypeChangedListener> derivationTypeListeners = new ArrayList<>();
     
     private DerivationType derivationType = DerivationType.FixedPoint;
+    private RelationshipType relationshipType = RelationshipType.Stated;
+    
+    private boolean inferredHierarchyAvailable = false;
     
     public DiffDerivationTypeManager() {
         
@@ -39,7 +49,15 @@ public class DiffDerivationTypeManager {
         this.derivationType = type;
         
         derivationTypeListeners.forEach( (listener) -> {
-            listener.derivationTypeChange(type);
+            listener.derivationTypeChanged(type);
+        });
+    }
+    
+    public void setRelationshipType(RelationshipType relType) {
+        this.relationshipType = relType;
+
+        derivationTypeListeners.forEach((listener) -> {
+            listener.relationshipTypeChanged(relType);
         });
     }
     
@@ -49,7 +67,19 @@ public class DiffDerivationTypeManager {
         });
     }
     
+    public void setInferredHierarchyAvailable(boolean value) {
+        this.inferredHierarchyAvailable = value;
+    }
+    
+    public boolean inferredHierarchyAvailable() {
+        return this.inferredHierarchyAvailable;
+    }
+    
     public DerivationType getDerivationType() {
         return derivationType;
+    }
+    
+    public RelationshipType getRelationshipType() {
+        return relationshipType;
     }
 }
