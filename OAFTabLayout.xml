@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+    <VSNode splits="1.0">
+        <CNode>
+            <Component label="Ontology Abstraction Framework (OAF) for Protege">
+                <Property id="pluginId" value="edu.njit.cs.saboc.bluowl.OAFAbNView"/>
+            </Component>
+        </CNode>
+    </VSNode>
+</layout>

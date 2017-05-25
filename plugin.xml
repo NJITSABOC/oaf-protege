@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <?eclipse version="3.4"?>
 <plugin>
-      <!-- Change me!  Remove this and the corresponding java class when you start adding real plugin content of your own. -->
-    <extension id="BLUOWLView"
+    <extension id="OAFAbNView"
                point="org.protege.editor.core.application.ViewComponent">
         
-        <label value="BLUOWL for Protege"/>
-        <class value="edu.njit.cs.saboc.blu.owl.protege.BLUOWLProtegePluginMain"/>
+        <label value="OAF Abstraction Network Plugin for Protege"/>
+        <class value="edu.njit.cs.saboc.blu.owl.protege.OAFAbNProtegePlugin"/>
        	<headerColor value="@org.protege.ontologycolor"/>
         <category value="@org.protege.ontologycategory"/>
     </extension>
     
-    <extension id="BLUOWLTab"
+    <extension id="OAFAbNTab"
               point="org.protege.editor.core.application.WorkspaceTab">
         
-      <label value="BLUOWL and OWL NAT"/>
+      <label value="Ontology Abstraction Framework (OAF)"/>
       <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
       <index value="X"/>
       <editorKitId value="OWLEditorKit"/>
-      <defaultViewConfigFileName value="BLUOWLTabLayout.xml"/>
+      <defaultViewConfigFileName value="OAFTabLayout.xml"/>
    </extension>
+   
 </plugin>
