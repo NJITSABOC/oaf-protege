@@ -9,7 +9,6 @@ import edu.njit.cs.saboc.blu.core.gui.graphframe.multiabn.MultiAbNGraphFrame;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFRecentlyOpenedFileManager.RecentlyOpenedFileException;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFStateFileManager;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomyFactory;
-import edu.njit.cs.saboc.blu.owl.abnhistory.OWLDerivationParser;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.initializers.OWLFrameManagerAdapter;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.initializers.OWLMultiAbNGraphFrameInitializers;
 import java.awt.BorderLayout;
@@ -194,9 +193,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     }
     
     private void displayDefaultAbN(ProtegeOAFOntologyDataManager dataManager) {
-        
-        System.out.println("OAF Status: " + dataManager.inferredRelsAvailable());
-        
+
         Hierarchy<OWLConcept> conceptHierarchy = dataManager.getOntology().getConceptHierarchy();
         
         Set<PropertyTypeAndUsage> usages = dataManager.getAvailablePropertyTypesInSubhierarchy(conceptHierarchy.getRoot());
@@ -228,13 +225,6 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         currentOntologyDataManager.setInferredRelsAvailable(true);
 
         updateCurrentOntology();
-
-        JOptionPane.showMessageDialog(
-                null,
-                "<html>The ontology has been classified. The OAF Class Browser"
-                + "<p>will display the inferred hierarchy.",
-                "Ontology Classified",
-                JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void updateCurrentOntology() {
