@@ -2,8 +2,8 @@
 <layout>
     <VSNode splits="1.0">
         <CNode>
-            <Component label="Ontology Abstraction Framework (OAF) for Protege">
-                <Property id="pluginId" value="edu.njit.cs.saboc.bluowl.OAFAbNView"/>
+            <Component label="Ontology Abstraction Framework for Protege">
+                <Property id="pluginId" value="oaf-protege.OAFView"/>
             </Component>
         </CNode>
     </VSNode>

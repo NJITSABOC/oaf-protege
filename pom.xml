@@ -9,10 +9,10 @@
 	</parent>
 
     <groupId>edu.njit.cs.saboc</groupId>
-    <artifactId>edu.njit.cs.saboc.bluowl</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <artifactId>oaf-protege</artifactId>
+    <version>1.0.0</version>
     <name>OAF Protege Plugin</name> 
-    <description>The OAF Protege Plugin</description> 
+    <description>The Ontology Abstraction Framework for Protege</description> 
 
     <packaging>bundle</packaging>
 
@@ -48,6 +48,18 @@
             <version>4.2.6</version>
         </dependency>
         
+        <dependency>
+            <groupId>edu.njit.cs.saboc</groupId>
+            <artifactId>generic-nat</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+        
     </dependencies>
 
     <build>
@@ -74,9 +86,9 @@
                         
                         <Import-Package>
                             org.apache.log4j.*; version="[1.2,2)", 
-                            org.protege.editor.core.*; version="4.3",
-                            org.protege.editor.owl.*; version="4.3",
-                            org.protege.editor.owl.ui; version="4.3",
+                            org.protege.editor.core.*; version="5.2",
+                            org.protege.editor.owl.*; version="5.2",
+                            org.protege.editor.owl.ui; version="5.2",
                             *
                         </Import-Package>
                         
@@ -85,7 +97,6 @@
                         <Private-Package>
                             edu.njit.cs.saboc.blu.*,
                             edu.njit.cs.saboc.nat.*,
-                            SnomedShared.*,
                             org.json.simple.*
                         </Private-Package>
                         
@@ -113,9 +124,9 @@
         
         <resources>
             <resource>
-                <directory>C:\Users\snoop_000\Documents\NetBeansProjects\BLUProject\org.protege.plugin.template</directory>
+                <directory>C:\Users\Chris Ochs\Documents\NetBeansProjects\oaf\bluowl-protege-plugin\</directory>
                 <includes>
-                    <include>BLUOWLTabLayout.xml</include>
+                    <include>OAFTabLayout.xml</include>
                 </includes>
             </resource>
         </resources>

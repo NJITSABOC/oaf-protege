@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <?eclipse version="3.4"?>
 <plugin>
-    <extension id="OAFAbNView"
+
+    <extension id="OAFView"
                point="org.protege.editor.core.application.ViewComponent">
         
-        <label value="OAF Abstraction Network Plugin for Protege"/>
+        <label value="Ontology Abstraction Framework for Protege"/>
         <class value="edu.njit.cs.saboc.blu.owl.protege.OAFAbNProtegePlugin"/>
        	<headerColor value="@org.protege.ontologycolor"/>
         <category value="@org.protege.ontologycategory"/>
     </extension>
     
-    <extension id="OAFAbNTab"
+    <extension id="OAFTab"
               point="org.protege.editor.core.application.WorkspaceTab">
         
       <label value="Ontology Abstraction Framework (OAF)"/>
       <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
       <index value="X"/>
+      
       <editorKitId value="OWLEditorKit"/>
+      
       <defaultViewConfigFileName value="OAFTabLayout.xml"/>
    </extension>
-   
 </plugin>

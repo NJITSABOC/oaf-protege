@@ -1,10 +1,14 @@
 package edu.njit.cs.saboc.blu.owl.protege;
 
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomyGenerator;
+import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
 import edu.njit.cs.saboc.blu.core.gui.gep.warning.AbNWarningManager;
 import edu.njit.cs.saboc.blu.core.gui.gep.warning.DisjointAbNWarningManager;
 import edu.njit.cs.saboc.blu.core.gui.graphframe.multiabn.MultiAbNGraphFrame;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFRecentlyOpenedFileManager.RecentlyOpenedFileException;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFStateFileManager;
+import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomyFactory;
 import edu.njit.cs.saboc.blu.owl.abnhistory.OWLDerivationParser;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.initializers.OWLFrameManagerAdapter;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.initializers.OWLMultiAbNGraphFrameInitializers;
@@ -15,12 +19,17 @@ import javax.swing.JFrame;
 import org.protege.editor.owl.ui.view.AbstractOWLViewComponent;
 
 import edu.njit.cs.saboc.blu.owl.ontology.OAFOntologyDataManager;
+import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
+import edu.njit.cs.saboc.blu.owl.utils.owlproperties.PropertyTypeAndUsage;
 import java.io.File;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import org.protege.editor.core.ui.util.UIUtil;
 import org.protege.editor.owl.model.OWLModelManager;
 import org.protege.editor.owl.model.event.OWLModelManagerListener;
@@ -36,7 +45,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
 
     private static final long serialVersionUID = -4515710047558710080L;
 
-    private final Map<OWLOntology, OAFOntologyDataManager> ontologyManagers = new HashMap<>();
+    private final Map<OWLOntology, ProtegeOAFOntologyDataManager> ontologyManagers = new HashMap<>();
 
     private final OWLModelManagerListener modelListener = (event) -> {
 
@@ -44,7 +53,6 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
 
         switch (event.getType()) {
             case ACTIVE_ONTOLOGY_CHANGED:
-
                 initializeAbNView();
                 break;
 
@@ -54,15 +62,15 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
                 break;
 
             case REASONER_CHANGED:
-
+                    this.ontologyAboutToClassify();
                 break;
 
             case ABOUT_TO_CLASSIFY:
-
+                    this.ontologyAboutToClassify();
                 break;
 
             case ONTOLOGY_CLASSIFIED:
-
+                    this.ontologyClassified();
                 break;
 
             case ONTOLOGY_CREATED:
@@ -118,17 +126,18 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
             
         }
         
+        this.add(contentPanel, BorderLayout.CENTER);
 
         getOWLModelManager().addListener(modelListener);
         getOWLModelManager().addOntologyChangeListener(changeListener);
         getOWLModelManager().addIOListener(ontologyIOListener);
+        
+        initializeAbNView();
     }
-    
-    
+
     private JPanel contentPanel;
     private MultiAbNGraphFrame graphFrame = null;
-    
-    
+
     private void initializeAbNView() {
         OWLOntologyManager ontologyManager = getOWLModelManager().getOWLOntologyManager();
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
@@ -136,43 +145,105 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         URI physicalURI = getOWLModelManager().getOntologyPhysicalURI(ontology);
         
         if (!UIUtil.isLocalFile(physicalURI)) {
-            
-            // TODO: Error
-            
+
+            JOptionPane.showMessageDialog(
+                    null,
+                    "<html>The OAF requires that an ontology be saved to, or opened from, a local file."
+                    + "<p>Please save the current ontology to a file and reset the OAF view in Protege.",
+                    "Save or open an ontology file",
+                    JOptionPane.ERROR_MESSAGE);
+
             return;
         }
                 
         if (!ontologyManagers.containsKey(ontology)) {
- 
+
             OAFOntologyDataManager manager = new OAFOntologyDataManager(
                     stateFileManager,
-                    ontologyManager, 
-                    new File(physicalURI), 
-                    ontology.getOntologyID().toString(), 
+                    ontologyManager,
+                    new File(physicalURI),
+                    ontology.getOntologyID().toString(),
                     ontology);
-            
-            ontologyManagers.put(ontology, manager);
+
+            ontologyManagers.put(ontology, new ProtegeOAFOntologyDataManager(getOWLModelManager(), manager));
         }
 
-        OAFOntologyDataManager dataManager = ontologyManagers.get(ontology);
+        ProtegeOAFOntologyDataManager dataManager = ontologyManagers.get(ontology);
         
         if(graphFrame == null) {
             createAbNView(dataManager);
         }
+        
+        displayDefaultAbN(dataManager);
     }
 
-    private void createAbNView(OAFOntologyDataManager dataManager) {
-        
-        OWLDerivationParser owlAbNDerivationParser = new OWLDerivationParser(dataManager);
+    private void createAbNView(ProtegeOAFOntologyDataManager dataManager) {
 
-        graphFrame = new MultiAbNGraphFrame(getMyFrame(),
-                new OWLMultiAbNGraphFrameInitializers(
-                        dataManager, 
-                        new OWLFrameManagerAdapter(graphFrame), 
-                        warningManager),
-                owlAbNDerivationParser);
+        OWLMultiAbNGraphFrameInitializers initializers = new OWLMultiAbNGraphFrameInitializers(
+                        dataManager,
+                        new OWLFrameManagerAdapter(graphFrame),
+                        warningManager);
+
+        graphFrame = new MultiAbNGraphFrame(getMyFrame());
+        graphFrame.setInitializers(initializers);
+
+        this.contentPanel.add(graphFrame.getContentPane(), BorderLayout.CENTER);
         
-        this.contentPanel.add(graphFrame, BorderLayout.CENTER);
+        this.contentPanel.revalidate();
+        this.contentPanel.repaint();
+    }
+    
+    private void displayDefaultAbN(ProtegeOAFOntologyDataManager dataManager) {
+        
+        System.out.println("OAF Status: " + dataManager.inferredRelsAvailable());
+        
+        Hierarchy<OWLConcept> conceptHierarchy = dataManager.getOntology().getConceptHierarchy();
+        
+        Set<PropertyTypeAndUsage> usages = dataManager.getAvailablePropertyTypesInSubhierarchy(conceptHierarchy.getRoot());
+        
+        OWLPAreaTaxonomyFactory factory = new OWLPAreaTaxonomyFactory(dataManager, usages);
+
+        PAreaTaxonomyGenerator taxonomyGenerator = new PAreaTaxonomyGenerator();
+        PAreaTaxonomy taxonomy = taxonomyGenerator.derivePAreaTaxonomy(factory, conceptHierarchy);
+        
+        
+        SwingUtilities.invokeLater( () -> {
+            this.graphFrame.displayPAreaTaxonomy(taxonomy);
+        });
+    }
+    
+    private void ontologyAboutToClassify() {
+        OWLOntology ontology = getOWLModelManager().getActiveOntology();
+
+        ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
+        currentOntologyDataManager.setInferredRelsAvailable(false);
+
+        updateCurrentOntology();
+    }
+
+    private void ontologyClassified() {
+        OWLOntology ontology = getOWLModelManager().getActiveOntology();
+
+        ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
+        currentOntologyDataManager.setInferredRelsAvailable(true);
+
+        updateCurrentOntology();
+
+        JOptionPane.showMessageDialog(
+                null,
+                "<html>The ontology has been classified. The OAF Class Browser"
+                + "<p>will display the inferred hierarchy.",
+                "Ontology Classified",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    private void updateCurrentOntology() {
+        OWLOntology ontology = getOWLModelManager().getActiveOntology();
+
+        ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
+        currentOntologyDataManager.reinitialize();
+
+        displayDefaultAbN(currentOntologyDataManager);
     }
 
     private JFrame getMyFrame() {
@@ -191,6 +262,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         return f;
     }
 
+    @Override
     protected void disposeOWLView() {
         OWLModelManager manager = getOWLModelManager();
 
