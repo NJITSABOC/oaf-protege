@@ -65,7 +65,6 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
                 break;
 
             case ABOUT_TO_CLASSIFY:
-                    this.ontologyAboutToClassify();
                 break;
 
             case ONTOLOGY_CLASSIFIED:
@@ -105,8 +104,10 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
 
     };
 
-    private final OWLOntologyChangeListener changeListener = (List<? extends OWLOntologyChange> changes) -> {
-        
+    private final OWLOntologyChangeListener changeListener = 
+            (List<? extends OWLOntologyChange> changes) -> {
+
+        this.updateCurrentOntology();
     };
 
     private final AbNWarningManager warningManager = new DisjointAbNWarningManager();
@@ -138,6 +139,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     private MultiAbNGraphFrame graphFrame = null;
 
     private void initializeAbNView() {
+        
         OWLOntologyManager ontologyManager = getOWLModelManager().getOWLOntologyManager();
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
@@ -178,13 +180,8 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
 
     private void createAbNView(ProtegeOAFOntologyDataManager dataManager) {
 
-        OWLMultiAbNGraphFrameInitializers initializers = new OWLMultiAbNGraphFrameInitializers(
-                        dataManager,
-                        new OWLFrameManagerAdapter(graphFrame),
-                        warningManager);
-
         graphFrame = new MultiAbNGraphFrame(getMyFrame());
-        graphFrame.setInitializers(initializers);
+        graphFrame.setInitializers(createInitializers(dataManager));
 
         this.contentPanel.add(graphFrame.getContentPane(), BorderLayout.CENTER);
         
@@ -192,8 +189,10 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         this.contentPanel.repaint();
     }
     
+    boolean firstAbN = true;
+    
     private void displayDefaultAbN(ProtegeOAFOntologyDataManager dataManager) {
-
+        
         Hierarchy<OWLConcept> conceptHierarchy = dataManager.getOntology().getConceptHierarchy();
         
         Set<PropertyTypeAndUsage> usages = dataManager.getAvailablePropertyTypesInSubhierarchy(conceptHierarchy.getRoot());
@@ -203,13 +202,13 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         PAreaTaxonomyGenerator taxonomyGenerator = new PAreaTaxonomyGenerator();
         PAreaTaxonomy taxonomy = taxonomyGenerator.derivePAreaTaxonomy(factory, conceptHierarchy);
         
+        this.graphFrame.displayPAreaTaxonomy(taxonomy, firstAbN);
         
-        SwingUtilities.invokeLater( () -> {
-            this.graphFrame.displayPAreaTaxonomy(taxonomy);
-        });
+        this.firstAbN = false;
     }
     
     private void ontologyAboutToClassify() {
+        
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
@@ -219,6 +218,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     }
 
     private void ontologyClassified() {
+        
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
@@ -228,12 +228,25 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     }
     
     private void updateCurrentOntology() {
+
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
         currentOntologyDataManager.reinitialize();
 
+        this.graphFrame.setInitializers(createInitializers(currentOntologyDataManager));
+
         displayDefaultAbN(currentOntologyDataManager);
+    }
+    
+    private OWLMultiAbNGraphFrameInitializers createInitializers(ProtegeOAFOntologyDataManager dataManager) {
+        
+        OWLMultiAbNGraphFrameInitializers initializers = new OWLMultiAbNGraphFrameInitializers(
+                        dataManager,
+                        new OWLFrameManagerAdapter(graphFrame),
+                        warningManager);
+        
+        return initializers;
     }
 
     private JFrame getMyFrame() {

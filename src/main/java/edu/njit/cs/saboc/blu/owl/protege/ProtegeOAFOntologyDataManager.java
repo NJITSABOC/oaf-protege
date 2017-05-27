@@ -60,7 +60,7 @@ public class ProtegeOAFOntologyDataManager extends OAFOntologyDataManager {
         
         OWLObjectHierarchyProvider<OWLClass> protegeInferredHierarchyProvider = 
                 protegeModelManager.getOWLHierarchyManager().getInferredOWLClassHierarchyProvider();
-        
+  
         OWLConcept root = getOntology().getOWLConceptFor(protegeModelManager.getOWLDataFactory().getOWLThing());
 
         Hierarchy<OWLConcept> oafInferredHierarchy = new Hierarchy<>(root);
