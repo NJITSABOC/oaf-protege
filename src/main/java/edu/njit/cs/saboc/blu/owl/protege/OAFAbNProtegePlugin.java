@@ -1,13 +1,18 @@
 package edu.njit.cs.saboc.blu.owl.protege;
 
+import edu.njit.cs.saboc.blu.core.abn.AbstractionNetwork;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomyGenerator;
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.provenance.PAreaTaxonomyDerivation;
+import edu.njit.cs.saboc.blu.core.abn.provenance.AbNDerivation;
+import edu.njit.cs.saboc.blu.core.abn.targetbased.provenance.TargetAbNDerivation;
 import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
 import edu.njit.cs.saboc.blu.core.gui.gep.warning.AbNWarningManager;
 import edu.njit.cs.saboc.blu.core.gui.gep.warning.DisjointAbNWarningManager;
 import edu.njit.cs.saboc.blu.core.gui.graphframe.multiabn.MultiAbNGraphFrame;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFRecentlyOpenedFileManager.RecentlyOpenedFileException;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFStateFileManager;
+import edu.njit.cs.saboc.blu.owl.abn.OWLLiveAbNFactory;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomyFactory;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.initializers.OWLFrameManagerAdapter;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.initializers.OWLMultiAbNGraphFrameInitializers;
@@ -28,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 import org.protege.editor.core.ui.util.UIUtil;
 import org.protege.editor.owl.model.OWLModelManager;
 import org.protege.editor.owl.model.event.OWLModelManagerListener;
@@ -61,7 +65,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
                 break;
 
             case REASONER_CHANGED:
-                    this.ontologyAboutToClassify();
+                    this.ontologyUnclassified();
                 break;
 
             case ABOUT_TO_CLASSIFY:
@@ -107,6 +111,9 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     private final OWLOntologyChangeListener changeListener = 
             (List<? extends OWLOntologyChange> changes) -> {
 
+                
+        System.out.println("OAF: Changes detected...");
+                
         this.updateCurrentOntology();
     };
 
@@ -173,9 +180,10 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         
         if(graphFrame == null) {
             createAbNView(dataManager);
+            displayDefaultAbN(dataManager);
+        } else {
+            refreshCurrentView();
         }
-        
-        displayDefaultAbN(dataManager);
     }
 
     private void createAbNView(ProtegeOAFOntologyDataManager dataManager) {
@@ -207,7 +215,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         this.firstAbN = false;
     }
     
-    private void ontologyAboutToClassify() {
+    private void ontologyUnclassified() {
         
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
@@ -228,6 +236,8 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     }
     
     private void updateCurrentOntology() {
+        
+        System.out.println("OAF: Updating current ontology...");
 
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
@@ -236,9 +246,36 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
 
         this.graphFrame.setInitializers(createInitializers(currentOntologyDataManager));
 
-        displayDefaultAbN(currentOntologyDataManager);
+        refreshCurrentView();
     }
     
+    private void refreshCurrentView() {
+        
+        System.out.println("OAF: Refreshing view...");
+        
+        OWLOntology ontology = getOWLModelManager().getActiveOntology();
+        ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
+
+        AbstractionNetwork abn = graphFrame.getAbNExplorationPanel().getDisplayPanel().getGraph().getAbstractionNetwork();
+        
+        AbNDerivation derivation = abn.getDerivation();
+        
+        if(derivation instanceof PAreaTaxonomyDerivation) {
+            
+            PAreaTaxonomyDerivation pareaDerivation = (PAreaTaxonomyDerivation)derivation;
+            ((OWLLiveAbNFactory)pareaDerivation.getFactory()).reinitialize();
+            
+        } else if(derivation instanceof TargetAbNDerivation) {
+            
+            TargetAbNDerivation targetDerivation = (TargetAbNDerivation)derivation;
+            ((OWLLiveAbNFactory)targetDerivation.getFactory()).reinitialize();
+        }
+        
+        AbstractionNetwork<?> newAbN = abn.getDerivation().getAbstractionNetwork(currentOntologyDataManager.getOntology());
+        
+        graphFrame.displayAbstractionNetwork(newAbN, false);
+    }
+
     private OWLMultiAbNGraphFrameInitializers createInitializers(ProtegeOAFOntologyDataManager dataManager) {
         
         OWLMultiAbNGraphFrameInitializers initializers = new OWLMultiAbNGraphFrameInitializers(
