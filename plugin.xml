@@ -7,28 +7,28 @@
         
         <label value="Ontology Abstraction Framework for Protege"/>
         <class value="edu.njit.cs.saboc.blu.owl.protege.OAFAbNProtegePlugin"/>
-       	<headerColor value="@org.protege.ontologycolor"/>
+        <headerColor value="@org.protege.ontologycolor"/>
         <category value="@org.protege.ontologycategory"/>
     </extension>
     
     <extension id="OAFTab"
-              point="org.protege.editor.core.application.WorkspaceTab">
+               point="org.protege.editor.core.application.WorkspaceTab">
         
-      <label value="Ontology Abstraction Framework (OAF)"/>
-      <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
-      <index value="X"/>
+        <label value="Ontology Abstraction Framework (OAF)"/>
+        <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
+        <index value="X"/>
       
-      <editorKitId value="OWLEditorKit"/>
+        <editorKitId value="OWLEditorKit"/>
       
-      <defaultViewConfigFileName value="OAFTabLayout.xml"/>
-   </extension>
+        <defaultViewConfigFileName value="OAFTabLayout.xml"/>
+    </extension>
    
     <extension id="OAFNATView" point="org.protege.editor.core.application.ViewComponent">
         
         <label value="Ontology Abstraction Framework (OAF) Class Browser"/>
         <class value="edu.njit.cs.saboc.blu.owl.protege.OAFProtegeNAT"/>
         
-       	<headerColor value="@org.protege.ontologycolor"/>
+        <headerColor value="@org.protege.ontologycolor"/>
         <category value="@org.protege.ontologycategory"/>
         
     </extension>
@@ -36,13 +36,23 @@
     <extension id="NATTab" 
                point="org.protege.editor.core.application.WorkspaceTab">
         
-      <label value="Ontology Abstraction Framework (OAF) Class Browser"/>
-      <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
-      <index value="X"/>
+        <label value="Ontology Abstraction Framework (OAF) Class Browser"/>
+        <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
+        <index value="X"/>
       
-      <editorKitId value="OWLEditorKit"/>
+        <editorKitId value="OWLEditorKit"/>
       
-      <defaultViewConfigFileName value="OAFNATLayout.xml"/>
-   </extension>
+        <defaultViewConfigFileName value="OAFNATLayout.xml"/>
+    </extension>
+   
+    <extension id="OAFLiveDiffView"
+               point="org.protege.editor.core.application.ViewComponent">
+        
+        <label value="Ontology Abstraction Network (OAF) Live Diff Taxonomies"/>
+        <class value="edu.njit.cs.saboc.blu.owl.protege.LiveTaxonomyView"/>
+        <headerColor value="@org.protege.ontologycolor"/>
+        <category value="@org.protege.ontologycategory"/>
+        
+    </extension>
    
 </plugin>

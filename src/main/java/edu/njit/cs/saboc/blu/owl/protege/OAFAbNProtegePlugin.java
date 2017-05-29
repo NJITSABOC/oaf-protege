@@ -124,12 +124,14 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         
         this.contentPanel = new JPanel(new BorderLayout());
 
-        try {
-             stateFileManager = new OAFStateFileManager("BLUOWL");
-        } catch (RecentlyOpenedFileException rofe) {
-            
+        if (stateFileManager == null) {
+            try {
+                stateFileManager = new OAFStateFileManager("BLUOWL");
+            } catch (RecentlyOpenedFileException rofe) {
+
+            }
         }
-        
+
         this.add(contentPanel, BorderLayout.CENTER);
 
         getOWLModelManager().addListener(modelListener);
@@ -234,8 +236,6 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     
     private void updateCurrentOntology() {
         
-        System.out.println("OAF: Updating current ontology...");
-
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
@@ -247,8 +247,6 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     }
     
     private void refreshCurrentView() {
-        
-        System.out.println("OAF: Refreshing view...");
         
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
         ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);

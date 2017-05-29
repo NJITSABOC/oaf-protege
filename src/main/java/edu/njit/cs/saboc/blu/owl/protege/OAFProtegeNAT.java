@@ -1,5 +1,6 @@
 package edu.njit.cs.saboc.blu.owl.protege;
 
+import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFRecentlyOpenedFileManager;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFStateFileManager;
 import edu.njit.cs.saboc.blu.owl.nat.OWLNATLayout;
 import java.awt.BorderLayout;
@@ -107,7 +108,14 @@ public class OAFProtegeNAT extends AbstractOWLViewComponent {
         
         setLayout(new BorderLayout());
         
-        this.stateFileManager = new OAFStateFileManager("BLUOWL");
+        
+        if (stateFileManager == null) {
+            try {
+                stateFileManager = new OAFStateFileManager("BLUOWL");
+            } catch (OAFRecentlyOpenedFileManager.RecentlyOpenedFileException rofe) {
+
+            }
+        }
         
         natBrowserPanel = new NATBrowserPanel<>(getMyFrame(), new OWLNATLayout());
         natBrowserPanel.setEnabled(false);
@@ -118,20 +126,13 @@ public class OAFProtegeNAT extends AbstractOWLViewComponent {
         getOWLModelManager().addListener(modelListener);
         getOWLModelManager().addOntologyChangeListener(changeListener);
         getOWLModelManager().addIOListener(ontologyIOListener);
-        
-        
-        System.out.println("Init listener...");
-        
+
         getOWLWorkspace().getOWLSelectionModel().addListener( () -> {
             
             OWLEntity selectedEntity = getOWLWorkspace().getOWLSelectionModel().getSelectedEntity();
-            
-            System.out.println("Listener here...");
-            
+
             if (selectedEntity != null && selectedEntity.isOWLClass()) {
 
-                System.out.println("Listener triggered...");
-                
                 OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
                 ProtegeOAFOntologyDataManager currentOntologyDataManager = oafOntologyManagers.get(ontology);

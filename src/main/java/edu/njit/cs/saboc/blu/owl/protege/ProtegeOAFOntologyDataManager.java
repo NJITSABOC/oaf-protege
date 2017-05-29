@@ -56,7 +56,7 @@ public class ProtegeOAFOntologyDataManager extends OAFOntologyDataManager {
         }
     }
     
-    private OAFOWLOntology createInferredOntology() {
+    protected OAFOWLOntology createInferredOntology() {
         
         OWLObjectHierarchyProvider<OWLClass> protegeInferredHierarchyProvider = 
                 protegeModelManager.getOWLHierarchyManager().getInferredOWLClassHierarchyProvider();
