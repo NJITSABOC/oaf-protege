@@ -22,4 +22,27 @@
       
       <defaultViewConfigFileName value="OAFTabLayout.xml"/>
    </extension>
+   
+    <extension id="OAFNATView" point="org.protege.editor.core.application.ViewComponent">
+        
+        <label value="Ontology Abstraction Framework (OAF) Class Browser"/>
+        <class value="edu.njit.cs.saboc.blu.owl.protege.OAFProtegeNAT"/>
+        
+       	<headerColor value="@org.protege.ontologycolor"/>
+        <category value="@org.protege.ontologycategory"/>
+        
+    </extension>
+    
+    <extension id="NATTab" 
+               point="org.protege.editor.core.application.WorkspaceTab">
+        
+      <label value="Ontology Abstraction Framework (OAF) Class Browser"/>
+      <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
+      <index value="X"/>
+      
+      <editorKitId value="OWLEditorKit"/>
+      
+      <defaultViewConfigFileName value="OAFNATLayout.xml"/>
+   </extension>
+   
 </plugin>

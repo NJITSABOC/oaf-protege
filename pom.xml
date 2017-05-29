@@ -82,7 +82,7 @@
                     <instructions>
                         <Bundle-ClassPath>.</Bundle-ClassPath>
                         <Bundle-SymbolicName>${project.artifactId};singleton:=true</Bundle-SymbolicName>
-                        <Bundle-Vendor>SABOC BLUOWL Development Team</Bundle-Vendor>
+                        <Bundle-Vendor>SABOC Development Team</Bundle-Vendor>
                         
                         <Import-Package>
                             org.apache.log4j.*; version="[1.2,2)", 
@@ -129,6 +129,14 @@
                     <include>OAFTabLayout.xml</include>
                 </includes>
             </resource>
+            
+            <resource>
+                <directory>C:\Users\Chris Ochs\Documents\NetBeansProjects\oaf\bluowl-protege-plugin\</directory>
+                <includes>
+                    <include>OAFNATLayout.xml</include>
+                </includes>
+            </resource>
+            
         </resources>
     </build>
 </project>

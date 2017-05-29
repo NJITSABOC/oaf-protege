@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+    <VSNode splits="1.0">
+        <CNode>
+            <Component label="Ontology Abstraction Framework (OAF) Class Browser">
+                <Property id="pluginId" value="oaf-protege.OAFNATView"/>
+            </Component>
+        </CNode>
+    </VSNode>
+</layout>

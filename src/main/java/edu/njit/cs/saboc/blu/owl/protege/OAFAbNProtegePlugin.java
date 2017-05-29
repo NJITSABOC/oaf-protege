@@ -10,12 +10,12 @@ import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
 import edu.njit.cs.saboc.blu.core.gui.gep.warning.AbNWarningManager;
 import edu.njit.cs.saboc.blu.core.gui.gep.warning.DisjointAbNWarningManager;
 import edu.njit.cs.saboc.blu.core.gui.graphframe.multiabn.MultiAbNGraphFrame;
+import edu.njit.cs.saboc.blu.core.gui.graphframe.multiabn.history.AbNDerivationHistory;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFRecentlyOpenedFileManager.RecentlyOpenedFileException;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFStateFileManager;
 import edu.njit.cs.saboc.blu.owl.abn.OWLLiveAbNFactory;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomyFactory;
 import edu.njit.cs.saboc.blu.owl.gui.graphframe.initializers.OWLFrameManagerAdapter;
-import edu.njit.cs.saboc.blu.owl.gui.graphframe.initializers.OWLMultiAbNGraphFrameInitializers;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import javax.swing.JFrame;
@@ -111,9 +111,6 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     private final OWLOntologyChangeListener changeListener = 
             (List<? extends OWLOntologyChange> changes) -> {
 
-                
-        System.out.println("OAF: Changes detected...");
-                
         this.updateCurrentOntology();
     };
 
@@ -256,30 +253,39 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
         ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
 
-        AbstractionNetwork abn = graphFrame.getAbNExplorationPanel().getDisplayPanel().getGraph().getAbstractionNetwork();
+        reinitializeAllActiveFactories();
         
-        AbNDerivation derivation = abn.getDerivation();
-        
-        if(derivation instanceof PAreaTaxonomyDerivation) {
-            
-            PAreaTaxonomyDerivation pareaDerivation = (PAreaTaxonomyDerivation)derivation;
-            ((OWLLiveAbNFactory)pareaDerivation.getFactory()).reinitialize();
-            
-        } else if(derivation instanceof TargetAbNDerivation) {
-            
-            TargetAbNDerivation targetDerivation = (TargetAbNDerivation)derivation;
-            ((OWLLiveAbNFactory)targetDerivation.getFactory()).reinitialize();
-        }
-        
+        AbstractionNetwork abn = graphFrame.getAbNExplorationPanel().getDisplayPanel().getGraph().getAbstractionNetwork();        
         AbstractionNetwork<?> newAbN = abn.getDerivation().getAbstractionNetwork(currentOntologyDataManager.getOntology());
-        
+
         graphFrame.displayAbstractionNetwork(newAbN, false);
     }
+    
+    private void reinitializeAllActiveFactories() {
+        AbNDerivationHistory history = graphFrame.getDerivationHistory();
 
-    private OWLMultiAbNGraphFrameInitializers createInitializers(ProtegeOAFOntologyDataManager dataManager) {
+        history.getHistory().forEach((historyEntry) -> {
+            AbNDerivation derivation = historyEntry.getDerivation();
+
+            if (derivation instanceof PAreaTaxonomyDerivation) {
+
+                PAreaTaxonomyDerivation pareaDerivation = (PAreaTaxonomyDerivation) derivation;
+                ((OWLLiveAbNFactory) pareaDerivation.getFactory()).reinitialize();
+
+            } else if (derivation instanceof TargetAbNDerivation) {
+
+                TargetAbNDerivation targetDerivation = (TargetAbNDerivation) derivation;
+                ((OWLLiveAbNFactory) targetDerivation.getFactory()).reinitialize();
+            }
+
+        });
+    }
+
+    private ProtegeAbNInitializers createInitializers(ProtegeOAFOntologyDataManager dataManager) {
         
-        OWLMultiAbNGraphFrameInitializers initializers = new OWLMultiAbNGraphFrameInitializers(
+        ProtegeAbNInitializers initializers = new ProtegeAbNInitializers(
                         dataManager,
+                        this.getOWLWorkspace(),
                         new OWLFrameManagerAdapter(graphFrame),
                         warningManager);
         
