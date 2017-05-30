@@ -1,4 +1,4 @@
-package edu.njit.cs.saboc.blu.owl.protege.live;
+package edu.njit.cs.saboc.blu.owl.protege.live.manager;
 
 import java.util.ArrayList;
 

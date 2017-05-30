@@ -9,7 +9,6 @@ import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAre
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomyFactory;
 import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSettings;
-import edu.njit.cs.saboc.blu.owl.protege.live.ProtegeLiveTaxonomyDataManager;
 
 /**
  *

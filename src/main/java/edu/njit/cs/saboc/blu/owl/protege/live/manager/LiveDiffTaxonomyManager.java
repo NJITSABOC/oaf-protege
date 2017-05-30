@@ -1,7 +1,6 @@
 package edu.njit.cs.saboc.blu.owl.protege.live.manager;
 
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSettings;
-import edu.njit.cs.saboc.blu.owl.protege.live.ProtegeLiveTaxonomyDataManager;
 import java.util.Optional;
 
 /**

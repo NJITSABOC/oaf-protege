@@ -8,19 +8,19 @@ import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.pareataxonomy.DiffTaxono
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLInheritableProperty;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomy;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
-import edu.njit.cs.saboc.blu.owl.gui.gep.panels.pareataxonomy.diff.configuration.OWLDiffPAreaTaxonomyConfiguration;
-import edu.njit.cs.saboc.blu.owl.gui.gep.panels.pareataxonomy.diff.configuration.OWLDiffPAreaTaxonomyConfigurationFactory;
 import edu.njit.cs.saboc.blu.owl.ontology.OAFOntologyDataManager;
 import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSelectionWidget;
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSettings;
-import edu.njit.cs.saboc.blu.owl.protege.live.DiffDerivationTypeManager;
-import edu.njit.cs.saboc.blu.owl.protege.live.DiffDerivationTypeManager.DerivationType;
-import edu.njit.cs.saboc.blu.owl.protege.live.DiffDerivationTypeManager.DerivationTypeChangedListener;
-import edu.njit.cs.saboc.blu.owl.protege.live.DiffDerivationTypeManager.RelationshipType;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.DerivationType;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.DerivationTypeChangedListener;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.RelationshipType;
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.LiveDiffTaxonomyManager;
-import edu.njit.cs.saboc.blu.owl.protege.live.ProtegeAbNExplorationPanel;
-import edu.njit.cs.saboc.blu.owl.protege.live.ProtegeLiveTaxonomyDataManager;
+import edu.njit.cs.saboc.blu.owl.protege.live.ProtegeDifTaxonomyExplorationPanel;
+import edu.njit.cs.saboc.blu.owl.protege.live.configuration.ProtegeDiffPAreaTaxonomyConfiguration;
+import edu.njit.cs.saboc.blu.owl.protege.live.configuration.ProtegeDiffPAreaTaxonomyConfigurationFactory;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.ProtegeLiveTaxonomyDataManager;
 import edu.njit.cs.saboc.blu.owl.utils.owlproperties.PropertyTypeAndUsage;
 import java.awt.BorderLayout;
 import java.awt.Container;
@@ -46,7 +46,7 @@ import org.semanticweb.owlapi.reasoner.OWLReasoner;
  */
 public class LiveTaxonomyView extends AbstractOWLViewComponent {
 
-    private final ProtegeAbNExplorationPanel explorationPanel = new ProtegeAbNExplorationPanel();
+    private final ProtegeDifTaxonomyExplorationPanel explorationPanel = new ProtegeDifTaxonomyExplorationPanel();
 
     private final HashMap<OWLOntology, ProtegeLiveTaxonomyDataManager> ontologyManagers = new HashMap<>();
 
@@ -367,8 +367,9 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     private void displayDiffPAreaTaxonomy(OWLDiffPAreaTaxonomy diffTaxonomy) {
         
         SwingUtilities.invokeLater(() -> {
-            OWLDiffPAreaTaxonomyConfigurationFactory configFactory = new OWLDiffPAreaTaxonomyConfigurationFactory();
-            OWLDiffPAreaTaxonomyConfiguration config = configFactory.createConfiguration(diffTaxonomy, displayManager);
+            
+            ProtegeDiffPAreaTaxonomyConfigurationFactory configFactory = new ProtegeDiffPAreaTaxonomyConfigurationFactory();
+            ProtegeDiffPAreaTaxonomyConfiguration config = configFactory.createConfiguration(diffTaxonomy, displayManager);
 
             AbstractionNetworkGraph graph = new DiffPAreaTaxonomyGraph(
                     getMyFrame(),

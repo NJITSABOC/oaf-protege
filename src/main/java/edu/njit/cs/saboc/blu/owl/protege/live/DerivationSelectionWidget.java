@@ -1,10 +1,12 @@
 package edu.njit.cs.saboc.blu.owl.protege.live;
 
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.ProtegeLiveTaxonomyDataManager;
 import edu.njit.cs.saboc.blu.core.gui.gep.AbNDisplayPanel;
 import edu.njit.cs.saboc.blu.core.gui.gep.AbNDisplayWidget;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
 import edu.njit.cs.saboc.blu.owl.protege.LiveTaxonomyView;
-import edu.njit.cs.saboc.blu.owl.protege.live.DiffDerivationTypeManager.DerivationType;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.DerivationType;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.Hashtable;

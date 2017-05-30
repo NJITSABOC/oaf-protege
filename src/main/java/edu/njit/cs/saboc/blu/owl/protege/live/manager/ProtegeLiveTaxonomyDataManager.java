@@ -1,5 +1,5 @@
 
-package edu.njit.cs.saboc.blu.owl.protege.live;
+package edu.njit.cs.saboc.blu.owl.protege.live.manager;
 
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.LiveDiffTaxonomyManager;
 import edu.njit.cs.saboc.blu.owl.ontology.OAFOntologyDataManager;
