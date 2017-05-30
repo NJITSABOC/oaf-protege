@@ -45,19 +45,23 @@ public class ProtegeOAFOntologyDataManager extends OAFOntologyDataManager {
     public boolean inferredRelsAvailable() {
         return this.inferredRelsAvailable;
     }
+    
+    public boolean useInferredRels() {
+        return inferredRelsAvailable();
+    }
 
     @Override
     protected OAFOWLOntology createOAFOntology() {
         
-        if(inferredRelsAvailable) {
+        if(useInferredRels()) {
             return createInferredOntology();
         } else {
             return super.createOAFOntology();
         }
     }
     
-    protected OAFOWLOntology createInferredOntology() {
-        
+    public OAFOWLOntology createInferredOntology() {
+
         OWLObjectHierarchyProvider<OWLClass> protegeInferredHierarchyProvider = 
                 protegeModelManager.getOWLHierarchyManager().getInferredOWLClassHierarchyProvider();
   

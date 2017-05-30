@@ -28,17 +28,11 @@ public class ProtegeLiveTaxonomyDataManager extends ProtegeOAFOntologyDataManage
     }
 
     @Override
-    public boolean inferredRelsAvailable() {
+    public boolean useInferredRels() {
         return false;
     }
     
     public void refreshOntology() {
         this.reinitialize();
-        
-        this.diffTaxonomyManager.setCurrentStatedHierarchy(this.getOntology().getConceptHierarchy());
-        
-        if(super.inferredRelsAvailable()) {
-            this.diffTaxonomyManager.setCurrentInferredHierarchy(createInferredOntology().getConceptHierarchy());
-        }
     }
 }

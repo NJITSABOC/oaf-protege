@@ -5,12 +5,15 @@ import edu.njit.cs.saboc.blu.core.gui.gep.AbNDisplayWidget;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
 import edu.njit.cs.saboc.blu.owl.protege.LiveTaxonomyView;
 import edu.njit.cs.saboc.blu.owl.protege.live.DiffDerivationTypeManager.DerivationType;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.Hashtable;
 import java.util.Optional;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JToggleButton;
 import javax.swing.border.BevelBorder;
@@ -25,11 +28,13 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     
     private final DiffDerivationTypeManager derivationTypeManager;
     
-    private final Dimension panelSize = new Dimension(400, 60);
+    private final Dimension panelSize = new Dimension(400, 70);
     
     private final JToggleButton btnUseInferredHierarchy;
     
     private final JButton btnDerivationOptions;
+    
+    private final JLabel lblRefreshInferred;
     
     public DerivationSelectionWidget(
             LiveTaxonomyView protegeTaxonomyView, 
@@ -39,6 +44,8 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         
         super(displayPanel);
         
+        JPanel derivationPanel = new JPanel();
+        
         this.derivationTypeManager = derivationTypeManager;
 
         JButton resetButton = new JButton("<html><div align='center'>Reset<br>Fixed Point");
@@ -46,7 +53,7 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
             derivationTypeManager.resetFixedPointDerivation();
         });
         
-        this.add(resetButton);
+        derivationPanel.add(resetButton);
         
         JSlider derivationTypeSlider = new JSlider(JSlider.HORIZONTAL, 0, 1, 0);
         derivationTypeSlider.setMajorTickSpacing(1);
@@ -73,20 +80,22 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
             }
         }); 
         
-        this.add(derivationTypeSlider);
+        derivationPanel.add(derivationTypeSlider);
         
         this.btnUseInferredHierarchy = new JToggleButton("<html><div align='center'>Use Inferred<br>Hierarchy");
         this.btnUseInferredHierarchy.setEnabled(false);
         
         this.btnUseInferredHierarchy.addActionListener( (ae) -> {
+            
             if(btnUseInferredHierarchy.isSelected()) {
                 derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Inferred);
             } else {
                 derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Stated);
             }
+            
         });
         
-        this.add(btnUseInferredHierarchy);
+        derivationPanel.add(btnUseInferredHierarchy);
         
         this.btnDerivationOptions = new JButton("<html><div align='center'>Derivation<br>Options");
         this.btnDerivationOptions.addActionListener( (ae) -> {
@@ -101,7 +110,14 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
             }
         });
         
-        this.add(btnDerivationOptions);
+        derivationPanel.add(btnDerivationOptions);
+        
+        this.lblRefreshInferred = new JLabel(" ");
+        
+        this.setLayout(new BorderLayout());
+        
+        this.add(derivationPanel, BorderLayout.CENTER);
+        this.add(lblRefreshInferred, BorderLayout.SOUTH);
         
         this.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
     }
@@ -114,6 +130,7 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
             btnUseInferredHierarchy.setEnabled(false);
             btnUseInferredHierarchy.setSelected(false);
         }
+        
     }
 
     @Override
@@ -123,9 +140,19 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
                 displayPanel.getBounds().height - panelSize.height - 20, 
                 panelSize.width, 
                 panelSize.height);
+        
+        this.validate();
     }
     
     public void setCurrentDataManager(ProtegeLiveTaxonomyDataManager dataManager) {
         this.optCurrentDataManager = Optional.of(dataManager);
+    }
+    
+    public void setInferredTaxonomyDirty() {
+        this.lblRefreshInferred.setText("<html><font color = 'RED'>Syncrhonize reasoner to update inferred hierarchy diff taxonomy");
+    }
+    
+    public void clearInferredTaxonomyDirty() {
+         this.lblRefreshInferred.setText(" ");
     }
 }

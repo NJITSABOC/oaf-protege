@@ -6,7 +6,6 @@ import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffPAreaTaxonomyGrap
 import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.SinglyRootedNodeLabelCreator;
 import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.pareataxonomy.DiffTaxonomyPainter;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLInheritableProperty;
-import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomy;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomy;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
 import edu.njit.cs.saboc.blu.owl.gui.gep.panels.pareataxonomy.diff.configuration.OWLDiffPAreaTaxonomyConfiguration;
@@ -28,7 +27,6 @@ import java.awt.Container;
 import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -38,7 +36,6 @@ import org.protege.editor.owl.model.io.IOListener;
 import org.protege.editor.owl.model.io.IOListenerEvent;
 import org.protege.editor.owl.ui.view.AbstractOWLViewComponent;
 import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyChange;
 import org.semanticweb.owlapi.model.OWLOntologyChangeListener;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
@@ -56,6 +53,8 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     private final DiffDerivationTypeManager derivationTypeManager = new DiffDerivationTypeManager();
 
     private DerivationSelectionWidget derivationSelectionWidget;
+    
+    private boolean reasonerRunning = false;
 
     private final OWLModelManagerListener modelListener = (event) -> {
 
@@ -70,21 +69,29 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
                 break;
 
             case REASONER_CHANGED:
-
-               handleReasonerStopped();
+                this.reasonerRunning = false;
                 
-               break;
-
-            case ABOUT_TO_CLASSIFY:
-                derivationSelectionWidget.setInferredHierarchyAvailable(false);
+                handleReasonerStopped();
 
                 break;
 
+            case ABOUT_TO_CLASSIFY:
+                derivationSelectionWidget.setInferredHierarchyAvailable(false);
+                break;
+
             case ONTOLOGY_CLASSIFIED:
-                              
-               handleOntologyReasoned();
-                
-               break;
+
+                if(reasonerRunning) {
+                    SwingUtilities.invokeLater(() -> {
+                        derivationSelectionWidget.clearInferredTaxonomyDirty();
+                        updateTaxonomyDisplay();
+                    });
+                } else {
+                    reasonerRunning = true;
+                    handleOntologyReasoned();
+                }
+
+                break;
 
             case ONTOLOGY_CREATED:
             case ONTOLOGY_LOADED:
@@ -119,7 +126,14 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
 
     };
 
-    private final OWLOntologyChangeListener changeListener = (List<? extends OWLOntologyChange> changes) -> {
+    private final OWLOntologyChangeListener changeListener = (changes) -> {
+        
+        if(reasonerRunning) {
+            SwingUtilities.invokeLater( () -> {
+                derivationSelectionWidget.setInferredTaxonomyDirty();
+            });
+        }
+        
         updateTaxonomyDisplay();
     };
 
@@ -160,7 +174,7 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
             }
 
             @Override
-            public void relationshipTypeChanged(DiffDerivationTypeManager.RelationshipType version) {
+            public void relationshipTypeChanged(RelationshipType version) {
                 updateTaxonomyDisplay();
             }
 
@@ -209,25 +223,20 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         }
 
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
-        dataManager.refreshOntology();
 
         derivationSelectionWidget.setCurrentDataManager(dataManager);
-
+        
         LiveDiffTaxonomyManager diffManager = dataManager.getDiffTaxonomyManager();
+        
         diffManager.setDerivationSettings(createDefaultSettings(dataManager));
-
-        OWLPAreaTaxonomy toTaxonomy = diffManager.deriveCurrentStatedTaxonomy();
-        diffManager.setCurrentStatedTaxonomy(toTaxonomy);
-
-        diffManager.setLastUpdatedStatedTaxonomy(toTaxonomy);
-        diffManager.setLastFixedPointStatedTaxonomy(toTaxonomy);
+        diffManager.initialize();
 
         OWLDiffPAreaTaxonomy diffTaxonomy;
 
         if (derivationTypeManager.getDerivationType() == DerivationType.FixedPoint) {
-            diffTaxonomy = diffManager.deriveStatedDiffTaxonomyFixedPoint(toTaxonomy);
+            diffTaxonomy = diffManager.getStatedDiffTaxonomyManager().deriveFixedPointDiffTaxonomy();
         } else {
-            diffTaxonomy = diffManager.deriveStatedDiffTaxonomyProgressive(toTaxonomy);
+            diffTaxonomy = diffManager.getStatedDiffTaxonomyManager().deriveProgressiveDiffTaxonomy();
         }
 
         displayDiffPAreaTaxonomy(diffTaxonomy);
@@ -239,6 +248,7 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
         
         dataManager.setInferredRelsAvailable(false);
+        dataManager.getDiffTaxonomyManager().setInferredRelsAvailable(false);
         
         derivationSelectionWidget.setInferredHierarchyAvailable(false);
         derivationTypeManager.setInferredHierarchyAvailable(false);
@@ -249,15 +259,15 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
-        dataManager.setInferredRelsAvailable(true);
         
-        dataManager.refreshOntology();
-       
         OWLReasoner reasoner = getOWLModelManager().getOWLReasonerManager().getCurrentReasoner();
         
         if (reasoner.isConsistent()) {
             derivationSelectionWidget.setInferredHierarchyAvailable(true);
             derivationTypeManager.setInferredHierarchyAvailable(true);
+            
+            dataManager.setInferredRelsAvailable(true);
+            dataManager.getDiffTaxonomyManager().setInferredRelsAvailable(true);
         } else {
             derivationSelectionWidget.setInferredHierarchyAvailable(false);
             derivationTypeManager.setInferredHierarchyAvailable(false);
@@ -300,98 +310,58 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     }
     
     public void resetFixedPoint() {
-        
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
         LiveDiffTaxonomyManager diffManager = dataManager.getDiffTaxonomyManager();
 
-        diffManager.setLastFixedPointStatedTaxonomy(diffManager.getCurrentStatedTaxonomy());
-
-        if (diffManager.getCurrentInferredTaxonomy().isPresent()) {
-            diffManager.setLastFixedPointInferredTaxonomy(diffManager.getCurrentInferredTaxonomy().get());
-        }
-
+        diffManager.reset();
+        
         updateTaxonomyDisplay();
     }
-    
+
     public void updateTaxonomyDisplay() {
-        
-        boolean useStated = derivationTypeManager.getRelationshipType().equals(
-                RelationshipType.Stated);
-
-        updateStatedTaxonomy(useStated);
-        updateInferredTaxonomy(!useStated);
-        
-    }
-
-    private void updateStatedTaxonomy(boolean showTaxonomy) {
-        
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
         dataManager.refreshOntology();
-
-        Thread taxonomyUpdateThread = new Thread(() -> {
-
-            LiveDiffTaxonomyManager diffManager = dataManager.getDiffTaxonomyManager();
-
-            OWLPAreaTaxonomy toTaxonomy = diffManager.deriveCurrentStatedTaxonomy();
-            diffManager.setCurrentStatedTaxonomy(toTaxonomy);
-
-            OWLDiffPAreaTaxonomy diffTaxonomy;
-
-            if (derivationTypeManager.getDerivationType() == DerivationType.FixedPoint) {
-                diffTaxonomy = diffManager.deriveStatedDiffTaxonomyFixedPoint(toTaxonomy);
-            } else {
-                diffTaxonomy = diffManager.deriveStatedDiffTaxonomyProgressive(toTaxonomy);
-            }
-
-            diffManager.setLastUpdatedStatedTaxonomy(toTaxonomy);
-
-            if (showTaxonomy) {
-                displayDiffPAreaTaxonomy(diffTaxonomy);
-            }
-        });
-
-        taxonomyUpdateThread.start();
+        
+        dataManager.getDiffTaxonomyManager().update();
+        
+        boolean useStated = derivationTypeManager.getRelationshipType().equals(
+                RelationshipType.Stated);
+        
+        if(useStated) {
+            updateStatedTaxonomy(dataManager.getDiffTaxonomyManager());
+        } else {
+            updateInferredTaxonomy(dataManager.getDiffTaxonomyManager());
+        }
     }
 
-    private void updateInferredTaxonomy(boolean showTaxonomy) {
+    private void updateStatedTaxonomy(LiveDiffTaxonomyManager manager) {
 
-        if (!derivationTypeManager.inferredHierarchyAvailable()) {
-            return;
+        OWLDiffPAreaTaxonomy diffTaxonomy;
+
+        if (derivationTypeManager.getDerivationType() == DerivationType.FixedPoint) {
+            diffTaxonomy = manager.getStatedDiffTaxonomyManager().deriveFixedPointDiffTaxonomy();
+        } else {
+            diffTaxonomy = manager.getStatedDiffTaxonomyManager().deriveProgressiveDiffTaxonomy();
         }
 
-        Thread loadThread = new Thread(() -> {
+        displayDiffPAreaTaxonomy(diffTaxonomy);
+    }
 
-            OWLOntology ontology = getOWLModelManager().getActiveOntology();
-            ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
-            
-            LiveDiffTaxonomyManager diffManager = dataManager.getDiffTaxonomyManager();
+    private void updateInferredTaxonomy(LiveDiffTaxonomyManager manager) {
 
-            OWLPAreaTaxonomy toTaxonomy = diffManager.deriveCompleteInferredTaxonomy();
-            diffManager.setCurrentInferredTaxonomy(toTaxonomy);
+        OWLDiffPAreaTaxonomy diffTaxonomy;
 
-            OWLDiffPAreaTaxonomy diffTaxonomy;
+        if (derivationTypeManager.getDerivationType() == DerivationType.FixedPoint) {
+            diffTaxonomy = manager.getInferredTaxonomyManager().deriveFixedPointDiffTaxonomy();
+        } else {
+            diffTaxonomy = manager.getInferredTaxonomyManager().deriveProgressiveDiffTaxonomy();
+        }
 
-            if (derivationTypeManager.getDerivationType() == DerivationType.FixedPoint) {
-                diffTaxonomy = diffManager.deriveInferredDiffTaxonomyFixedPoint(toTaxonomy);
-            } else {
-                diffTaxonomy = diffManager.deriveInferredDiffTaxonomyProgressive(toTaxonomy);
-            }
-
-            diffManager.setLastUpdatedInferredTaxonomy(toTaxonomy);
-
-            OWLPAreaTaxonomy inferredTaxonomy = diffManager.deriveCompleteInferredTaxonomy();
-            diffManager.setCurrentInferredTaxonomy(inferredTaxonomy);
-
-            if (showTaxonomy) {
-                displayDiffPAreaTaxonomy(diffTaxonomy);
-            }
-        });
-
-        loadThread.start();
+        displayDiffPAreaTaxonomy(diffTaxonomy);
     }
 
     private void displayDiffPAreaTaxonomy(OWLDiffPAreaTaxonomy diffTaxonomy) {
