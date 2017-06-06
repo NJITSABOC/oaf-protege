@@ -1,6 +1,5 @@
 package edu.njit.cs.saboc.blu.owl.protege;
 
-import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFRecentlyOpenedFileManager;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFStateFileManager;
 import edu.njit.cs.saboc.blu.owl.nat.OWLNATLayout;
 import java.awt.BorderLayout;
@@ -35,7 +34,14 @@ import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
 public class OAFProtegeNAT extends AbstractOWLViewComponent {
 
-    private static final long serialVersionUID = -4515710047558710080L;
+    private final OAFStateFileManager stateFileManager = new OAFStateFileManager("BLUOWL");
+    
+    private final Map<OWLOntology, ProtegeOAFOntologyDataManager> oafOntologyManagers = new HashMap<>();
+    private final Map<OWLOntology, NATWorkspace> oafNATWorkspaces = new HashMap<>();
+    
+    private NATBrowserPanel<OWLConcept> natBrowserPanel;
+    
+    private boolean firstSave = true;
 
     private final OWLModelManagerListener modelListener = (event) -> {
 
@@ -55,6 +61,14 @@ public class OAFProtegeNAT extends AbstractOWLViewComponent {
                 ontologyClassified();
                 break;
 
+            case ONTOLOGY_SAVED:
+                
+                if(firstSave) {
+                    displayCurrentOntology();
+                    firstSave = false;
+                }
+                
+                break;
 
             case ONTOLOGY_VISIBILITY_CHANGED:
             case ENTITY_RENDERER_CHANGED:
@@ -62,7 +76,6 @@ public class OAFProtegeNAT extends AbstractOWLViewComponent {
             case ONTOLOGY_CREATED:
             case ONTOLOGY_LOADED:
             case ONTOLOGY_RELOADED:
-            case ONTOLOGY_SAVED:
 
             default:
         }
@@ -92,45 +105,38 @@ public class OAFProtegeNAT extends AbstractOWLViewComponent {
 
     };
 
-    private final OWLOntologyChangeListener changeListener = (List<? extends OWLOntologyChange> changes) -> {
+    private final OWLOntologyChangeListener changeListener = 
+            (List<? extends OWLOntologyChange> changes) -> {
+                
         updateCurrentOntology();
     };
     
-    private final Map<OWLOntology, ProtegeOAFOntologyDataManager> oafOntologyManagers = new HashMap<>();
-    private final Map<OWLOntology, NATWorkspace> oafNATWorkspaces = new HashMap<>();
-    
-    private NATBrowserPanel<OWLConcept> natBrowserPanel;
-    
-    private OAFStateFileManager stateFileManager = null;
-
     @Override
     protected void initialiseOWLView() throws Exception {
         
         setLayout(new BorderLayout());
         
+        natBrowserPanel = new NATBrowserPanel<>(
+                getMyFrame(), 
+                stateFileManager,
+                new OWLNATLayout());
         
-        if (stateFileManager == null) {
-            try {
-                stateFileManager = new OAFStateFileManager("BLUOWL");
-            } catch (OAFRecentlyOpenedFileManager.RecentlyOpenedFileException rofe) {
-
-            }
-        }
-        
-        natBrowserPanel = new NATBrowserPanel<>(getMyFrame(), new OWLNATLayout());
         natBrowserPanel.setEnabled(false);
-                
+
         this.add(natBrowserPanel, BorderLayout.CENTER);
         
-
         getOWLModelManager().addListener(modelListener);
         getOWLModelManager().addOntologyChangeListener(changeListener);
         getOWLModelManager().addIOListener(ontologyIOListener);
 
         getOWLWorkspace().getOWLSelectionModel().addListener( () -> {
             
+            if(!natBrowserPanel.isEnabled()) {
+                return;
+            }
+            
             OWLEntity selectedEntity = getOWLWorkspace().getOWLSelectionModel().getSelectedEntity();
-
+            
             if (selectedEntity != null && selectedEntity.isOWLClass()) {
 
                 OWLOntology ontology = getOWLModelManager().getActiveOntology();
@@ -166,6 +172,11 @@ public class OAFProtegeNAT extends AbstractOWLViewComponent {
     }
     
     private void updateCurrentOntology() {
+        
+        if(!natBrowserPanel.isEnabled()) {
+            return;
+        }
+        
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeOAFOntologyDataManager currentOntologyDataManager = oafOntologyManagers.get(ontology);
@@ -175,69 +186,58 @@ public class OAFProtegeNAT extends AbstractOWLViewComponent {
     }
 
     private void displayCurrentOntology() {
-        
+
         OWLOntologyManager ontologyManager = getOWLModelManager().getOWLOntologyManager();
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
-        URI physicalURI = getOWLModelManager().getOntologyPhysicalURI(ontology);
-
         natBrowserPanel.reset();
 
-        if (UIUtil.isLocalFile(physicalURI)) {
-            File ontologyFile = new File(physicalURI);
-            
-            if (!oafOntologyManagers.containsKey(ontology)) {
-                
-                OAFOntologyDataManager dataManager = new OAFOntologyDataManager(
-                                stateFileManager,
-                                ontologyManager,
-                                ontologyFile,
-                                ontology.getOntologyID().toString(),
-                                ontology);
-                
-                oafOntologyManagers.put(ontology, new ProtegeOAFOntologyDataManager(getOWLModelManager(), dataManager));
-            }
-            
-            
-            SwingUtilities.invokeLater(() -> {
-                ProtegeOAFOntologyDataManager currentOntologyDataManager = oafOntologyManagers.get(ontology);
-                
-                natBrowserPanel.setDataSource(currentOntologyDataManager.getClassBrowserDataSource());
+        if (!oafOntologyManagers.containsKey(ontology)) {
 
-                if (oafNATWorkspaces.containsKey(currentOntologyDataManager.getSourceOntology())) {
-
-                    NATWorkspace<OWLConcept> workspace = oafNATWorkspaces.get(currentOntologyDataManager.getSourceOntology());
-
-                    natBrowserPanel.setWorkspace(workspace);
-
-                } else {
-                    natBrowserPanel.getFocusConceptManager().navigateToRoot();
-
-                    NATWorkspace workspace = NATWorkspace.createNewWorkspaceFromCurrent(
-                            natBrowserPanel,
-                            null,
-                            String.format("%s Default Workspace", currentOntologyDataManager.getOntologyFile().getName()));
-
-                    oafNATWorkspaces.put(currentOntologyDataManager.getSourceOntology(), workspace);
-
-                    natBrowserPanel.setWorkspace(workspace);
-                }
-
-                natBrowserPanel.setEnabled(true);
-            });
-
-        } else {
-            
-            JOptionPane.showMessageDialog(
+            OAFOntologyDataManager dataManager = new OAFOntologyDataManager(
+                    stateFileManager,
+                    ontologyManager,
                     null,
-                    "<html>The OAF Class Browser requires that the ontology be saved to, or opened from, a local file."
-                            + "<p>Please save the current ontology to a file and reset the NAT view in Protege.", 
-                    "Save or open an ontology file", 
-                    JOptionPane.ERROR_MESSAGE);
-            
-             natBrowserPanel.reset();
-             natBrowserPanel.setEnabled(false);
+                    ontology.getOntologyID().toString(),
+                    ontology);
+
+            oafOntologyManagers.put(ontology, new ProtegeOAFOntologyDataManager(getOWLModelManager(), dataManager));
         }
+
+        URI physicalURI = getOWLModelManager().getOntologyPhysicalURI(ontology);
+        
+        ProtegeOAFOntologyDataManager currentOntologyDataManager = oafOntologyManagers.get(ontology);
+        
+        if (currentOntologyDataManager.getOntologyFile() == null && UIUtil.isLocalFile(physicalURI)) {
+            File ontologyFile = new File(physicalURI);
+
+            currentOntologyDataManager.setOntologyFile(ontologyFile);
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            natBrowserPanel.setDataSource(currentOntologyDataManager.getClassBrowserDataSource());
+
+            if (oafNATWorkspaces.containsKey(currentOntologyDataManager.getSourceOntology())) {
+
+                NATWorkspace<OWLConcept> workspace = oafNATWorkspaces.get(currentOntologyDataManager.getSourceOntology());
+
+                natBrowserPanel.setWorkspace(workspace);
+
+            } else {
+                natBrowserPanel.getFocusConceptManager().navigateToRoot();
+
+                NATWorkspace workspace = NATWorkspace.createNewWorkspaceFromCurrent(
+                        natBrowserPanel,
+                        null,
+                        "Default Workspace");
+
+                oafNATWorkspaces.put(currentOntologyDataManager.getSourceOntology(), workspace);
+
+                natBrowserPanel.setWorkspace(workspace);
+            }
+
+            natBrowserPanel.setEnabled(true);
+        });
     }
     
     private JFrame getMyFrame() {

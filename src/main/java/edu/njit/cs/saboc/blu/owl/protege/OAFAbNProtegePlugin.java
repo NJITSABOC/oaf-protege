@@ -11,7 +11,6 @@ import edu.njit.cs.saboc.blu.core.gui.gep.warning.AbNWarningManager;
 import edu.njit.cs.saboc.blu.core.gui.gep.warning.DisjointAbNWarningManager;
 import edu.njit.cs.saboc.blu.core.gui.graphframe.multiabn.MultiAbNGraphFrame;
 import edu.njit.cs.saboc.blu.core.gui.graphframe.multiabn.history.AbNDerivationHistory;
-import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFRecentlyOpenedFileManager.RecentlyOpenedFileException;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFStateFileManager;
 import edu.njit.cs.saboc.blu.owl.abn.OWLLiveAbNFactory;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomyFactory;
@@ -31,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import org.protege.editor.core.ui.util.UIUtil;
 import org.protege.editor.owl.model.OWLModelManager;
@@ -46,9 +44,9 @@ import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
 public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
 
-    private static final long serialVersionUID = -4515710047558710080L;
-
     private final Map<OWLOntology, ProtegeOAFOntologyDataManager> ontologyManagers = new HashMap<>();
+    
+    private boolean firstSave = true;
 
     private final OWLModelManagerListener modelListener = (event) -> {
 
@@ -72,13 +70,22 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
                 break;
 
             case ONTOLOGY_CLASSIFIED:
-                    this.ontologyClassified();
+                this.ontologyClassified();
+                
                 break;
 
+            case ONTOLOGY_SAVED:
+                
+                if(firstSave) {
+                    initializeAbNView();
+                    firstSave = false;
+                }
+                
+                break;
+                
             case ONTOLOGY_CREATED:
             case ONTOLOGY_LOADED:
             case ONTOLOGY_RELOADED:
-            case ONTOLOGY_SAVED:
 
             default:
         }
@@ -115,7 +122,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     };
 
     private final AbNWarningManager warningManager = new DisjointAbNWarningManager();
-    private OAFStateFileManager stateFileManager = null;
+    private final OAFStateFileManager stateFileManager = new OAFStateFileManager("BLUOWL");
         
     @Override
     protected void initialiseOWLView() throws Exception {
@@ -123,14 +130,6 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         setLayout(new BorderLayout());
         
         this.contentPanel = new JPanel(new BorderLayout());
-
-        if (stateFileManager == null) {
-            try {
-                stateFileManager = new OAFStateFileManager("BLUOWL");
-            } catch (RecentlyOpenedFileException rofe) {
-
-            }
-        }
 
         this.add(contentPanel, BorderLayout.CENTER);
 
@@ -151,32 +150,26 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
 
         URI physicalURI = getOWLModelManager().getOntologyPhysicalURI(ontology);
         
-        if (!UIUtil.isLocalFile(physicalURI)) {
-
-            JOptionPane.showMessageDialog(
-                    null,
-                    "<html>The OAF requires that an ontology be saved to, or opened from, a local file."
-                    + "<p>Please save the current ontology to a file and reset the OAF view in Protege.",
-                    "Save or open an ontology file",
-                    JOptionPane.ERROR_MESSAGE);
-
-            return;
-        }
-                
         if (!ontologyManagers.containsKey(ontology)) {
 
             OAFOntologyDataManager manager = new OAFOntologyDataManager(
                     stateFileManager,
                     ontologyManager,
-                    new File(physicalURI),
+                    null,
                     ontology.getOntologyID().toString(),
                     ontology);
 
             ontologyManagers.put(ontology, new ProtegeOAFOntologyDataManager(getOWLModelManager(), manager));
         }
-
+        
         ProtegeOAFOntologyDataManager dataManager = ontologyManagers.get(ontology);
         
+        if (dataManager.getOntologyFile() == null && UIUtil.isLocalFile(physicalURI)) {
+            File ontologyFile = new File(physicalURI);
+
+            dataManager.setOntologyFile(ontologyFile);
+        }
+
         if(graphFrame == null) {
             createAbNView(dataManager);
             displayDefaultAbN(dataManager);
@@ -187,7 +180,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
 
     private void createAbNView(ProtegeOAFOntologyDataManager dataManager) {
 
-        graphFrame = new MultiAbNGraphFrame(getMyFrame());
+        graphFrame = new MultiAbNGraphFrame(getMyFrame(), stateFileManager);
         graphFrame.setInitializers(createInitializers(dataManager));
 
         this.contentPanel.add(graphFrame.getContentPane(), BorderLayout.CENTER);
@@ -293,6 +286,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
     private JFrame getMyFrame() {
 
         Container cont = this.getParent();
+        
         if (cont == null) {
             return null;
         }

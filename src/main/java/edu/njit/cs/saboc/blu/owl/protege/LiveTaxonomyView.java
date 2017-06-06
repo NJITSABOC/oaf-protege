@@ -5,6 +5,7 @@ import edu.njit.cs.saboc.blu.core.graph.AbstractionNetworkGraph;
 import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffPAreaTaxonomyGraph;
 import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.SinglyRootedNodeLabelCreator;
 import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.pareataxonomy.DiffTaxonomyPainter;
+import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFStateFileManager;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLInheritableProperty;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomy;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
@@ -45,6 +46,8 @@ import org.semanticweb.owlapi.reasoner.OWLReasoner;
  * @author Chris Ochs
  */
 public class LiveTaxonomyView extends AbstractOWLViewComponent {
+    
+    private final OAFStateFileManager stateFileManager = new OAFStateFileManager("BLUOWL");
 
     private final ProtegeDifTaxonomyExplorationPanel explorationPanel = new ProtegeDifTaxonomyExplorationPanel();
 
@@ -144,7 +147,11 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         
         setLayout(new BorderLayout());
 
-        displayManager = new OWLAbNFrameManager(getMyFrame(), (frame) -> {
+        displayManager = new OWLAbNFrameManager(
+                getMyFrame(), 
+                stateFileManager, 
+                (frame) -> {
+            
             Container contentPane = frame.getContentPane();
 
             JFrame contentFrame = new JFrame();
