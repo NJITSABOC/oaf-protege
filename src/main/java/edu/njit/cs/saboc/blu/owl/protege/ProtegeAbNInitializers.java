@@ -272,8 +272,8 @@ public class ProtegeAbNInitializers extends OWLMultiAbNGraphFrameInitializers {
                                 config.getUIConfiguration().getAbNDisplayManager(),
                                 getFrameManager(),
                                 false),
-                        (bound) -> {
-                            DisjointAbstractionNetwork disjointAbN = config.getAbstractionNetwork().getAggregated(bound);
+                        (bound, isWeightedAggregate) -> {
+                            DisjointAbstractionNetwork disjointAbN = config.getAbstractionNetwork().getAggregated(bound, isWeightedAggregate);
                             config.getUIConfiguration().getAbNDisplayManager().displayDisjointPAreaTaxonomy(disjointAbN);
                         },
                         getWarningManager());
@@ -322,9 +322,8 @@ public class ProtegeAbNInitializers extends OWLMultiAbNGraphFrameInitializers {
                 return new DisjointAbNExplorationPanelInitializer(
                         config,
                         tanConfig,
-                        (bound) -> {
-                            
-                            DisjointAbstractionNetwork disjointAbN = config.getAbstractionNetwork().getAggregated(bound);
+                        (bound, isWeightedAggregate) -> {
+                            DisjointAbstractionNetwork disjointAbN = config.getAbstractionNetwork().getAggregated(bound, isWeightedAggregate);
                             config.getUIConfiguration().getAbNDisplayManager().displayDisjointTribalAbstractionNetwork(disjointAbN);
                         },
                         
