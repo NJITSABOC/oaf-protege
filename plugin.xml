@@ -5,7 +5,7 @@
     <extension id="OAFView"
                point="org.protege.editor.core.application.ViewComponent">
         
-        <label value="Ontology Abstraction Framework for Protege"/>
+        <label value="OAF for Protege"/>
         <class value="edu.njit.cs.saboc.blu.owl.protege.OAFAbNProtegePlugin"/>
         <headerColor value="@org.protege.ontologycolor"/>
         <category value="@org.protege.ontologycategory"/>
@@ -14,7 +14,7 @@
     <extension id="OAFTab"
                point="org.protege.editor.core.application.WorkspaceTab">
         
-        <label value="Ontology Abstraction Framework (OAF)"/>
+        <label value="OAF for Protege"/>
         <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
         <index value="X"/>
       
@@ -25,7 +25,7 @@
    
     <extension id="OAFNATView" point="org.protege.editor.core.application.ViewComponent">
         
-        <label value="Ontology Abstraction Framework (OAF) Class Browser"/>
+        <label value="OAF Class Browser"/>
         <class value="edu.njit.cs.saboc.blu.owl.protege.OAFProtegeNAT"/>
         
         <headerColor value="@org.protege.ontologycolor"/>
@@ -36,7 +36,7 @@
     <extension id="NATTab" 
                point="org.protege.editor.core.application.WorkspaceTab">
         
-        <label value="Ontology Abstraction Framework (OAF) Class Browser"/>
+        <label value="OAF Class Browser"/>
         <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
         <index value="X"/>
       
@@ -48,7 +48,7 @@
     <extension id="OAFLiveDiffView"
                point="org.protege.editor.core.application.ViewComponent">
         
-        <label value="Ontology Abstraction Network (OAF) Live Diff Taxonomies"/>
+        <label value="OAF Live Diff Taxonomies"/>
         <class value="edu.njit.cs.saboc.blu.owl.protege.LiveTaxonomyView"/>
         <headerColor value="@org.protege.ontologycolor"/>
         <category value="@org.protege.ontologycategory"/>

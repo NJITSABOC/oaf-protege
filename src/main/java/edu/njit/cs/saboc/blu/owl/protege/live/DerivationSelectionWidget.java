@@ -12,7 +12,6 @@ import java.awt.Dimension;
 import java.util.Hashtable;
 import java.util.Optional;
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -30,7 +29,7 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     
     private final DiffDerivationTypeManager derivationTypeManager;
     
-    private final Dimension panelSize = new Dimension(400, 70);
+    private final Dimension panelSize = new Dimension(500, 90);
     
     private final JToggleButton btnUseInferredHierarchy;
     
@@ -62,7 +61,7 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         derivationTypeSlider.setPaintTicks(true);
         derivationTypeSlider.setPaintLabels(true);
         
-        derivationTypeSlider.setPreferredSize(new Dimension(150, 50));
+        derivationTypeSlider.setPreferredSize(new Dimension(200, 70));
         
         Hashtable labelTable = new Hashtable();
         labelTable.put(0, new JLabel("Fixed Point"));
