@@ -8,14 +8,16 @@ import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
 import edu.njit.cs.saboc.blu.owl.protege.LiveTaxonomyView;
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.DerivationType;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
-import java.util.Hashtable;
+import java.awt.GridLayout;
 import java.util.Optional;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSlider;
 import javax.swing.JToggleButton;
 import javax.swing.border.BevelBorder;
 
@@ -29,8 +31,17 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     
     private final DiffDerivationTypeManager derivationTypeManager;
     
-    private final Dimension panelSize = new Dimension(500, 90);
+    private final Dimension NO_WARNING_SIZE = new Dimension(550, 40);
+    private final Dimension WARNING_SIZE = new Dimension(550, 70);
+
+    private Dimension panelSize = NO_WARNING_SIZE;
     
+    private final JButton btnResetFixedPoint;
+    
+    private final JToggleButton btnUseFixedPoint;
+    private final JToggleButton btnUseProgressive;
+    
+    private final JToggleButton btnUseStatedHierarchy;
     private final JToggleButton btnUseInferredHierarchy;
     
     private final JButton btnDerivationOptions;
@@ -45,60 +56,77 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         
         super(displayPanel);
         
+        this.setBorder(null);
+        
         JPanel derivationPanel = new JPanel();
+        derivationPanel.setBorder(null);
         
         this.derivationTypeManager = derivationTypeManager;
 
-        JButton resetButton = new JButton("<html><div align='center'>Reset<br>Fixed Point");
-        resetButton.addActionListener( (ae) -> {
+        btnResetFixedPoint = new JButton("Reset Fixed Point");
+        btnResetFixedPoint.addActionListener( (ae) -> {
             derivationTypeManager.resetFixedPointDerivation();
         });
         
-        derivationPanel.add(resetButton);
+        derivationPanel.add(btnResetFixedPoint);
         
-        JSlider derivationTypeSlider = new JSlider(JSlider.HORIZONTAL, 0, 1, 0);
-        derivationTypeSlider.setMajorTickSpacing(1);
-        derivationTypeSlider.setPaintTicks(true);
-        derivationTypeSlider.setPaintLabels(true);
+        ButtonGroup derivationTypeGroup = new ButtonGroup();
         
-        derivationTypeSlider.setPreferredSize(new Dimension(200, 70));
+        btnUseFixedPoint = new JToggleButton("Fixed Point");
+        btnUseProgressive = new JToggleButton("Progressive");
+
+        derivationTypeGroup.add(btnUseFixedPoint);
+        derivationTypeGroup.add(btnUseProgressive);
         
-        Hashtable labelTable = new Hashtable();
-        labelTable.put(0, new JLabel("Fixed Point"));
-        labelTable.put(1, new JLabel("Progressive"));
+        btnUseFixedPoint.setSelected(true);
         
-        derivationTypeSlider.setLabelTable(labelTable);
-        
-        derivationTypeSlider.addChangeListener( (ce) -> {
-            if(!derivationTypeSlider.getValueIsAdjusting()) {
-                if(derivationTypeSlider.getValue() == 0) {
-                    resetButton.setEnabled(true);
-                    derivationTypeManager.setDerivationType(DerivationType.FixedPoint);
-                } else {
-                    resetButton.setEnabled(false);
-                    derivationTypeManager.setDerivationType(DerivationType.Progressive);
-                }
-            }
-        }); 
-        
-        derivationPanel.add(derivationTypeSlider);
-        
-        this.btnUseInferredHierarchy = new JToggleButton("<html><div align='center'>Use Inferred<br>Hierarchy");
-        this.btnUseInferredHierarchy.setEnabled(false);
-        
-        this.btnUseInferredHierarchy.addActionListener( (ae) -> {
-            
-            if(btnUseInferredHierarchy.isSelected()) {
-                derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Inferred);
-            } else {
-                derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Stated);
-            }
-            
+        btnUseFixedPoint.addActionListener( (ae) -> {
+            btnResetFixedPoint.setEnabled(true);
+            derivationTypeManager.setDerivationType(DerivationType.FixedPoint);
         });
         
-        derivationPanel.add(btnUseInferredHierarchy);
+        btnUseProgressive.addActionListener( (ae) -> {
+            btnResetFixedPoint.setEnabled(false);
+            derivationTypeManager.setDerivationType(DerivationType.Progressive);
+        });
         
-        this.btnDerivationOptions = new JButton("<html><div align='center'>Derivation<br>Options");
+        JPanel derivationTypePanel = new JPanel(new GridLayout(1, 2));
+        derivationTypePanel.add(btnUseFixedPoint);
+        derivationTypePanel.add(btnUseProgressive);
+        
+        derivationTypePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        
+        derivationPanel.add(derivationTypePanel);
+        
+        ButtonGroup relTypeGroup = new ButtonGroup();
+        
+        this.btnUseStatedHierarchy = new JToggleButton("Asserted");
+        this.btnUseInferredHierarchy = new JToggleButton("Inferred");
+        
+        relTypeGroup.add(btnUseStatedHierarchy);
+        relTypeGroup.add(btnUseInferredHierarchy);
+        
+        btnUseStatedHierarchy.setSelected(true);
+        
+        btnUseInferredHierarchy.setEnabled(false);
+        
+        btnUseStatedHierarchy.addActionListener( (ae) -> {
+            derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Stated);
+        });
+        
+        btnUseInferredHierarchy.addActionListener( (ae) -> {
+            derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Inferred);
+        });
+        
+        JPanel relTypePanel = new JPanel(new GridLayout(1, 2));
+        
+        relTypePanel.add(btnUseStatedHierarchy);
+        relTypePanel.add(btnUseInferredHierarchy);
+        relTypePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        
+        derivationPanel.add(relTypePanel);
+        
+        this.btnDerivationOptions = new JButton("Options");
         this.btnDerivationOptions.addActionListener( (ae) -> {
             
             if(this.optCurrentDataManager.isPresent()) {
@@ -118,11 +146,12 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         this.setLayout(new BorderLayout());
         
         this.add(derivationPanel, BorderLayout.CENTER);
+        
         this.add(lblRefreshInferred, BorderLayout.SOUTH);
         
-        this.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
+        lblRefreshInferred.setVisible(false);
     }
-    
+
     public void setInferredHierarchyAvailable(boolean value) {
         
         if(value) {
@@ -131,14 +160,13 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
             btnUseInferredHierarchy.setEnabled(false);
             btnUseInferredHierarchy.setSelected(false);
         }
-        
     }
 
     @Override
     public void displayPanelResized(AbNDisplayPanel displayPanel) {
         
         this.setBounds(10, 
-                displayPanel.getBounds().height - panelSize.height - 20, 
+                displayPanel.getBounds().height - panelSize.height - 10, 
                 panelSize.width, 
                 panelSize.height);
         
@@ -150,7 +178,10 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     }
     
     public void setInferredTaxonomyDirty() {
-        this.lblRefreshInferred.setText("<html><font color = 'RED'>Syncrhonize reasoner to update inferred hierarchy diff taxonomy");
+                
+        this.lblRefreshInferred.setText("<html><font color = 'RED'>"
+                + "Synchronize reasoner to update inferred diff taxonomy");
+        
     }
     
     public void clearInferredTaxonomyDirty() {
