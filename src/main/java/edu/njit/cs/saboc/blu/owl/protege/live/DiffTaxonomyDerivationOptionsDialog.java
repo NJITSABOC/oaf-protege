@@ -56,6 +56,7 @@ public class DiffTaxonomyDerivationOptionsDialog extends JDialog {
             protegeDataManager.getDiffTaxonomyManager().setDerivationSettings(settings);
             protegeDataManager.getDiffTaxonomyManager().reset();
             
+            protegeTaxonomyView.updateTaxonomyData();
             protegeTaxonomyView.updateTaxonomyDisplay();
 
             this.setVisible(false);

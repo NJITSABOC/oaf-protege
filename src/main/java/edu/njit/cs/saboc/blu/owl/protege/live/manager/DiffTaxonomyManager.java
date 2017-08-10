@@ -92,10 +92,16 @@ public class DiffTaxonomyManager {
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "setCurrentTaxonomy",
-                ""));
+                String.format("beforeHierarchy: %d | afterHierarchy: %d", 
+                        this.currentTaxonomy.getSourceHierarchy().size(), 
+                       startingTaxonomy.getSourceHierarchy().size())));
         
         this.lastUpdatedTaxonomy = this.currentTaxonomy;
         this.currentTaxonomy = startingTaxonomy;
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "setCurrentTaxonomy",
+                ""));
     }
     
     public OWLDiffPAreaTaxonomy deriveFixedPointDiffTaxonomy() {
@@ -113,6 +119,13 @@ public class DiffTaxonomyManager {
                         lastFixedPointTaxonomy,
                         dataManager.getOntology(),
                         currentTaxonomy);
+        
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "deriveFixedPointDiffTaxonomy",
+                String.format("before: %s | after: %s", 
+                        lastFixedPointTaxonomy.toString(), 
+                        currentTaxonomy.toString())));
 
         return diffTaxonomy;
     }
@@ -132,6 +145,12 @@ public class DiffTaxonomyManager {
                         lastUpdatedTaxonomy,
                         dataManager.getOntology(),
                         currentTaxonomy);
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "deriveFixedPointDiffTaxonomy",
+                String.format("before: %s | after: %s",
+                        lastUpdatedTaxonomy.toString(),
+                        currentTaxonomy.toString())));
 
         return diffTaxonomy;
     }

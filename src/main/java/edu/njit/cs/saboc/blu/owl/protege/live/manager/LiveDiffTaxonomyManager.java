@@ -59,6 +59,10 @@ public class LiveDiffTaxonomyManager {
         }
     }
     
+    public Optional<DerivationSettings> getDerivationSettings() {
+        return Optional.of(this.currentDerivationSettings);
+    }
+    
     public void reset() {
         
         logger.debug(
@@ -119,10 +123,20 @@ public class LiveDiffTaxonomyManager {
     
     public void update() {
         
-        this.statedDiffTaxonomyManager.update(
-                dataManager.getOntology().getConceptHierarchy());
+        logger.debug(
+                LogMessageGenerator.createLiveDiffString(
+                        "update",
+                        ""));
+        
+        this.statedDiffTaxonomyManager.update(dataManager.getOntology().getConceptHierarchy());
 
         if (this.optTnferredDiffTaxonomyManager.isPresent()) {
+            
+            logger.debug(
+                    LogMessageGenerator.createLiveDiffString(
+                            "update",
+                            "updating inferred"));
+            
             optTnferredDiffTaxonomyManager.get().update(
                     dataManager.createInferredOntology().getConceptHierarchy());
         }

@@ -11,8 +11,11 @@ public class LogMessageGenerator {
             String methodName,
             String message) {
         
-        return String.format("%s (%s): %s", 
-                toolName, methodName, message);
+        return String.format("%s\t%d\t%s\t%s", 
+                toolName, 
+                System.currentTimeMillis(), 
+                methodName, 
+                message);
     }
     
     public static String createLiveDiffString(String methodName, String message) {

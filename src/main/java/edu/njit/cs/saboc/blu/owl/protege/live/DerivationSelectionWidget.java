@@ -13,6 +13,10 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Optional;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -35,8 +39,8 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     
     private final DiffDerivationTypeManager derivationTypeManager;
     
-    private final Dimension NO_WARNING_SIZE = new Dimension(550, 40);
-    private final Dimension WARNING_SIZE = new Dimension(550, 50);
+    private final Dimension NO_WARNING_SIZE = new Dimension(570, 40);
+    private final Dimension WARNING_SIZE = new Dimension(570, 50);
 
     private Dimension panelSize = NO_WARNING_SIZE;
     
@@ -144,8 +148,20 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
                             protegeTaxonomyView,
                             this.optCurrentDataManager.get(), 
                             frameManager);
+                 
             }
         });
+        
+        this.btnDerivationOptions.addMouseListener(new MouseAdapter() {
+
+            @Override
+            public void mouseEntered(MouseEvent me) {
+                 btnDerivationOptions.setToolTipText(
+                        createdStyledOptionsButtonTooltip());
+            }
+
+        });
+        
         
         derivationPanel.add(btnDerivationOptions);
 
@@ -193,7 +209,6 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         
         btnUseFixedPoint.setForeground(Color.DARK_GRAY);
         btnUseFixedPoint.setFont(btnUseFixedPoint.getFont().deriveFont(Font.PLAIN));
-        
     }
     
     private void assertedHierarchySelected() {
@@ -293,5 +308,52 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         this.lblRefreshInferred.setVisible(false);
         
         this.displayPanelResized(this.getDisplayPanel());
+    }
+    
+    private String createdStyledOptionsButtonTooltip() {
+
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "createdStyledOptionsButtonTooltip",
+                ""));
+        
+        
+        if (this.optCurrentDataManager.isPresent()) {
+
+            Optional<DerivationSettings> optSettings = this.optCurrentDataManager.get().getDiffTaxonomyManager().getDerivationSettings();
+            
+            if(optSettings.isPresent()) {
+                DerivationSettings settings = optSettings.get();
+                
+                String tooltip = ""
+                        + "<html><b>Root class: </b> %s<p>";
+                
+                String propertyTypes = "<b>Property Types and Uses: </b><br><ul>";
+                
+                ArrayList<String> selectedProperties = new ArrayList<>();
+                settings.getTypesAndUsages().forEach( (typeAndUse) -> {
+                    selectedProperties.add(typeAndUse.toString());
+                });
+                
+                Collections.sort(selectedProperties);
+                
+                for(String typeStr : selectedProperties) {
+                    propertyTypes += String.format("<li>%s</li>", typeStr);
+                }
+                
+                propertyTypes += "</ul><p>";
+                
+                tooltip += propertyTypes;
+                
+                boolean useAllRels = settings.getAvailableProperties().equals(settings.getSelectedProperties());
+                
+                if(!useAllRels) {
+                    tooltip += "<i>Subset of properties selected...</i>";
+                }
+                
+                return String.format(tooltip, settings.getRoot().getName());
+            }
+        }
+
+        return null;
     }
 }
