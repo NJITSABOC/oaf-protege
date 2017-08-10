@@ -10,16 +10,15 @@ import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.util.Optional;
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
-import javax.swing.border.BevelBorder;
 
 /**
  *
@@ -32,7 +31,7 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     private final DiffDerivationTypeManager derivationTypeManager;
     
     private final Dimension NO_WARNING_SIZE = new Dimension(550, 40);
-    private final Dimension WARNING_SIZE = new Dimension(550, 70);
+    private final Dimension WARNING_SIZE = new Dimension(550, 50);
 
     private Dimension panelSize = NO_WARNING_SIZE;
     
@@ -47,6 +46,8 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     private final JButton btnDerivationOptions;
     
     private final JLabel lblRefreshInferred;
+    
+    private boolean initialized = false;
     
     public DerivationSelectionWidget(
             LiveTaxonomyView protegeTaxonomyView, 
@@ -81,13 +82,11 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         btnUseFixedPoint.setSelected(true);
         
         btnUseFixedPoint.addActionListener( (ae) -> {
-            btnResetFixedPoint.setEnabled(true);
-            derivationTypeManager.setDerivationType(DerivationType.FixedPoint);
+           fixedPointSelected();
         });
         
         btnUseProgressive.addActionListener( (ae) -> {
-            btnResetFixedPoint.setEnabled(false);
-            derivationTypeManager.setDerivationType(DerivationType.Progressive);
+            progressiveSelected();
         });
         
         JPanel derivationTypePanel = new JPanel(new GridLayout(1, 2));
@@ -111,11 +110,11 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         btnUseInferredHierarchy.setEnabled(false);
         
         btnUseStatedHierarchy.addActionListener( (ae) -> {
-            derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Stated);
+            assertedHierarchySelected();
         });
         
         btnUseInferredHierarchy.addActionListener( (ae) -> {
-            derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Inferred);
+           inferredHierarchySelected();
         });
         
         JPanel relTypePanel = new JPanel(new GridLayout(1, 2));
@@ -140,6 +139,9 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         });
         
         derivationPanel.add(btnDerivationOptions);
+
+        fixedPointSelected();
+        assertedHierarchySelected();
         
         this.lblRefreshInferred = new JLabel(" ");
         
@@ -147,11 +149,71 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         
         this.add(derivationPanel, BorderLayout.CENTER);
         
-        this.add(lblRefreshInferred, BorderLayout.SOUTH);
+        this.add(lblRefreshInferred, BorderLayout.NORTH);
         
         lblRefreshInferred.setVisible(false);
+        
+        this.initialized = true;
     }
+    
+    private void fixedPointSelected() {
+        
+        if(initialized) {
+            derivationTypeManager.setDerivationType(DerivationType.FixedPoint);
+        }
+        
+        btnResetFixedPoint.setEnabled(true);
+        
+        btnUseFixedPoint.setForeground(Color.BLACK);
+        btnUseFixedPoint.setFont(btnUseFixedPoint.getFont().deriveFont(Font.BOLD));
+        
+        btnUseProgressive.setForeground(Color.DARK_GRAY);
+        btnUseProgressive.setFont(btnUseProgressive.getFont().deriveFont(Font.PLAIN));
+    }
+    
+    private void progressiveSelected() {
+        
+        if(initialized) {
+            derivationTypeManager.setDerivationType(DerivationType.Progressive);
+        }
+        
+        btnResetFixedPoint.setEnabled(false);
+        
+        btnUseProgressive.setForeground(Color.BLACK);
+        btnUseProgressive.setFont(btnUseProgressive.getFont().deriveFont(Font.BOLD));
+        
+        btnUseFixedPoint.setForeground(Color.DARK_GRAY);
+        btnUseFixedPoint.setFont(btnUseFixedPoint.getFont().deriveFont(Font.PLAIN));
+        
+    }
+    
+    private void assertedHierarchySelected() {
 
+        if (initialized) {
+            derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Stated);
+        }
+
+        btnUseStatedHierarchy.setForeground(Color.BLACK);
+        btnUseStatedHierarchy.setFont(btnUseStatedHierarchy.getFont().deriveFont(Font.BOLD));
+
+        btnUseInferredHierarchy.setForeground(Color.DARK_GRAY);
+        btnUseInferredHierarchy.setFont(btnUseInferredHierarchy.getFont().deriveFont(Font.PLAIN));
+    }
+    
+    private void inferredHierarchySelected() {
+        
+        if(initialized) {
+            derivationTypeManager.setRelationshipType(DiffDerivationTypeManager.RelationshipType.Inferred);
+        }
+
+        btnUseInferredHierarchy.setForeground(Color.BLACK);
+        btnUseInferredHierarchy.setFont(btnUseInferredHierarchy.getFont().deriveFont(Font.BOLD));
+
+        btnUseStatedHierarchy.setForeground(Color.DARK_GRAY);
+        btnUseStatedHierarchy.setFont(btnUseStatedHierarchy.getFont().deriveFont(Font.PLAIN));
+        
+    }
+    
     public void setInferredHierarchyAvailable(boolean value) {
         
         if(value) {
@@ -178,13 +240,25 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     }
     
     public void setInferredTaxonomyDirty() {
+        
+        this.panelSize = WARNING_SIZE;
                 
         this.lblRefreshInferred.setText("<html><font color = 'RED'>"
-                + "Synchronize reasoner to update inferred diff taxonomy");
+                + "Synchronize reasoner to update inferred diff "
+                + "taxonomy");
         
+        this.lblRefreshInferred.setVisible(true);
+        
+        this.displayPanelResized(this.getDisplayPanel());
     }
     
     public void clearInferredTaxonomyDirty() {
-         this.lblRefreshInferred.setText(" ");
+        
+        this.panelSize = NO_WARNING_SIZE;
+        
+        this.lblRefreshInferred.setText(" ");
+        this.lblRefreshInferred.setVisible(false);
+        
+        this.displayPanelResized(this.getDisplayPanel());
     }
 }
