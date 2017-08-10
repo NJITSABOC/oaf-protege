@@ -40,12 +40,16 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyChangeListener;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Chris Ochs
  */
 public class LiveTaxonomyView extends AbstractOWLViewComponent {
+    
+    private final Logger logger = LoggerFactory.getLogger(LiveTaxonomyView.class);
     
     private final OAFStateFileManager stateFileManager = new OAFStateFileManager("BLUOWL");
 
@@ -60,10 +64,13 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     private boolean reasonerRunning = false;
 
     private final OWLModelManagerListener modelListener = (event) -> {
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "ModelManagerListener", 
+                String.format("Event: %s", event.getType())));
 
         switch (event.getType()) {
             case ACTIVE_ONTOLOGY_CHANGED:
-
                 break;
 
             case ONTOLOGY_VISIBILITY_CHANGED:
@@ -73,9 +80,8 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
 
             case REASONER_CHANGED:
                 this.reasonerRunning = false;
-                
                 handleReasonerStopped();
-
+                
                 break;
 
             case ABOUT_TO_CLASSIFY:
@@ -109,29 +115,37 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
 
         @Override
         public void beforeSave(IOListenerEvent iole) {
-
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                "IOListener - beforeSave", ""));
         }
 
         @Override
         public void afterSave(IOListenerEvent iole) {
-
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                "IOListener - afterSave", ""));
         }
 
         @Override
         public void beforeLoad(IOListenerEvent iole) {
-
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                "IOListener - beforeLoad", ""));
         }
 
         @Override
         public void afterLoad(IOListenerEvent iole) {
-
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                "IOListener - afterLoad", ""));
         }
-
     };
 
     private final OWLOntologyChangeListener changeListener = (changes) -> {
         
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "OntologyChangeListener", 
+                String.format("reasonerRunner: %s", Boolean.toString(reasonerRunning))));
+        
         if(reasonerRunning) {
+
             SwingUtilities.invokeLater( () -> {
                 derivationSelectionWidget.setInferredTaxonomyDirty();
             });
@@ -145,6 +159,10 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     @Override
     protected void initialiseOWLView() throws Exception {
         
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "initialiseOWLView", 
+                ""));
+
         setLayout(new BorderLayout());
 
         displayManager = new OWLAbNFrameManager(
@@ -210,10 +228,18 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     
     private void initializeOAFView() {
         
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "initialiseOAFView",
+                ""));
+        
         OWLOntologyManager ontologyManager = getOWLModelManager().getOWLOntologyManager();
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         if (!ontologyManagers.containsKey(ontology)) {
+            
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                    "initialiseOAFView",
+                    String.format("Creating new ontology manager entry: %s", ontology.getOntologyID().toString())));
             
             OAFOntologyDataManager dataManager = new OAFOntologyDataManager(
                     null,
@@ -251,6 +277,10 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     
     private void handleReasonerStopped() {
         
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "handleReasonerStopped",
+                ""));
+
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
         
@@ -259,10 +289,13 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         
         derivationSelectionWidget.setInferredHierarchyAvailable(false);
         derivationTypeManager.setInferredHierarchyAvailable(false);
-        
     }
 
     private void handleOntologyReasoned() {
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "handleOntologyReasoned",
+                ""));
         
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
@@ -270,18 +303,33 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         OWLReasoner reasoner = getOWLModelManager().getOWLReasonerManager().getCurrentReasoner();
         
         if (reasoner.isConsistent()) {
+            
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                "handleOntologyReasoned",
+                "Reasoner consistent"));
+            
             derivationSelectionWidget.setInferredHierarchyAvailable(true);
             derivationTypeManager.setInferredHierarchyAvailable(true);
             
             dataManager.setInferredRelsAvailable(true);
             dataManager.getDiffTaxonomyManager().setInferredRelsAvailable(true);
         } else {
+            
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                    "handleOntologyReasoned",
+                    "Reasoner inconsistent"));
+            
             derivationSelectionWidget.setInferredHierarchyAvailable(false);
             derivationTypeManager.setInferredHierarchyAvailable(false);
         }
     }
     
     private DerivationSettings createDefaultSettings(ProtegeLiveTaxonomyDataManager dataManager) {
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "createDefaultSettings",
+                String.format("Creating default derivation settings for: %s", 
+                        dataManager.getSourceOntology().getOntologyID().toString())));
         
         OWLConcept root = dataManager.getOntology().getConceptHierarchy().getRoot();
         
@@ -300,6 +348,10 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     }
 
     private JFrame getMyFrame() {
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "getMyFrame",
+                ""));
 
         Container cont = this.getParent();
         
@@ -317,6 +369,11 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     }
     
     public void resetFixedPoint() {
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "resetFixedPoint",
+                ""));
+        
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
@@ -328,6 +385,11 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     }
 
     public void updateTaxonomyDisplay() {
+
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "updateTaxonomyDisplay",
+                ""));
+        
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
@@ -339,19 +401,42 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
                 RelationshipType.Stated);
         
         if(useStated) {
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                    "updateTaxonomyDisplay",
+                    "Use stated hierarchy"));
+            
             updateStatedTaxonomy(dataManager.getDiffTaxonomyManager());
         } else {
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                    "updateTaxonomyDisplay",
+                    "Use inferred hierarchy"));
+
             updateInferredTaxonomy(dataManager.getDiffTaxonomyManager());
         }
     }
 
     private void updateStatedTaxonomy(LiveDiffTaxonomyManager manager) {
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "updateStatedTaxonomy",
+                ""));
 
         OWLDiffPAreaTaxonomy diffTaxonomy;
 
         if (derivationTypeManager.getDerivationType() == DerivationType.FixedPoint) {
+
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                    "updateStatedTaxonomy",
+                    "Fixed Point"));
+            
             diffTaxonomy = manager.getStatedDiffTaxonomyManager().deriveFixedPointDiffTaxonomy();
+            
         } else {
+            
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                    "updateStatedTaxonomy",
+                    "Progressive"));
+            
             diffTaxonomy = manager.getStatedDiffTaxonomyManager().deriveProgressiveDiffTaxonomy();
         }
 
@@ -359,12 +444,27 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     }
 
     private void updateInferredTaxonomy(LiveDiffTaxonomyManager manager) {
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "updateInferredTaxonomy",
+                ""));
 
         OWLDiffPAreaTaxonomy diffTaxonomy;
 
         if (derivationTypeManager.getDerivationType() == DerivationType.FixedPoint) {
+            
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                    "updateInferredTaxonomy",
+                    "Fixed Point"));
+            
             diffTaxonomy = manager.getInferredTaxonomyManager().deriveFixedPointDiffTaxonomy();
+            
         } else {
+            
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                    "updateInferredTaxonomy",
+                    "Progressive"));
+            
             diffTaxonomy = manager.getInferredTaxonomyManager().deriveProgressiveDiffTaxonomy();
         }
 
@@ -373,7 +473,15 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
 
     private void displayDiffPAreaTaxonomy(OWLDiffPAreaTaxonomy diffTaxonomy) {
         
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "displayDiffPAreaTaxonomy",
+                ""));
+        
         SwingUtilities.invokeLater(() -> {
+            
+            logger.debug(LogMessageGenerator.createLiveDiffString(
+                "displayDiffPAreaTaxonomy",
+                "Displaying taxonomy"));
             
             ProtegeDiffPAreaTaxonomyConfigurationFactory configFactory = new ProtegeDiffPAreaTaxonomyConfigurationFactory();
             ProtegeDiffPAreaTaxonomyConfiguration config = configFactory.createConfiguration(diffTaxonomy, displayManager);
@@ -395,6 +503,11 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
 
     @Override
     protected void disposeOWLView() {
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "disposeOWLView",
+                ""));
+        
         OWLModelManager manager = getOWLModelManager();
 
         manager.removeListener(modelListener);

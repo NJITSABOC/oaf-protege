@@ -6,14 +6,19 @@ import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.wizard.OWLPAreaTaxonomyWizardPanel;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.wizard.OWLPAreaTaxonomyWizardPanel.OWLPAreaTaxonomyDerivationAction;
 import edu.njit.cs.saboc.blu.owl.protege.LiveTaxonomyView;
+import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
 import java.util.Set;
 import javax.swing.JDialog;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Chris Ochs
  */
 public class DiffTaxonomyDerivationOptionsDialog extends JDialog {
+    
+    private final Logger logger = LoggerFactory.getLogger(DiffTaxonomyDerivationOptionsDialog.class);
     
     private final OWLPAreaTaxonomyWizardPanel wizardPanel;
 
@@ -22,12 +27,25 @@ public class DiffTaxonomyDerivationOptionsDialog extends JDialog {
             ProtegeLiveTaxonomyDataManager protegeDataManager,
             OWLAbNFrameManager frameManager) {
         
+         logger.debug(LogMessageGenerator.createLiveDiffString(
+                    "DiffTaxonomyDerivationOptionsDialog", 
+                    "Constructed"));
+        
         OWLPAreaTaxonomyDerivationAction derivationAction = 
                 (dataManager, 
                         root, 
                         typesAndUsages, 
                         availableProperties, 
                         selectedProperties) -> {
+                    
+            String debugMessage = String.format("root: %s, typesAndUsages: %s, availableProperties: %s, selectedProperties: %s",
+                    root.getName(),
+                    typesAndUsages.toString(), 
+                    availableProperties.toString(),
+                    selectedProperties.toString());
+            
+            logger.debug(LogMessageGenerator.createLiveDiffString("DiffTaxonomyDerivationOptionsDialog", 
+                    String.format("OWLPAreaTaxonomyDerivationAction: %s", debugMessage)));
                     
             DerivationSettings settings = new DerivationSettings(
                     root, 
@@ -59,5 +77,4 @@ public class DiffTaxonomyDerivationOptionsDialog extends JDialog {
         
         this.setVisible(true);
     }
-    
 }

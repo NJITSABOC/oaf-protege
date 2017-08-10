@@ -6,6 +6,7 @@ import edu.njit.cs.saboc.blu.core.gui.gep.AbNDisplayPanel;
 import edu.njit.cs.saboc.blu.core.gui.gep.AbNDisplayWidget;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
 import edu.njit.cs.saboc.blu.owl.protege.LiveTaxonomyView;
+import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.DerivationType;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -13,19 +14,21 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.util.Optional;
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
-import javax.swing.border.BevelBorder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Chris Ochs
  */
 public class DerivationSelectionWidget extends AbNDisplayWidget {
+    
+    private final Logger logger = LoggerFactory.getLogger(DerivationSelectionWidget.class);
 
     private Optional<ProtegeLiveTaxonomyDataManager> optCurrentDataManager = Optional.empty();
     
@@ -55,6 +58,10 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
             DiffDerivationTypeManager derivationTypeManager) {
         
         super(displayPanel);
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "Constructor", 
+                ""));
         
         this.setBorder(null);
         
@@ -154,6 +161,10 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
 
     public void setInferredHierarchyAvailable(boolean value) {
         
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "setInferredHierarchyAvailable",
+                String.format("value: %s", Boolean.toString(value))));
+
         if(value) {
             btnUseInferredHierarchy.setEnabled(true);
         } else {
@@ -165,6 +176,10 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     @Override
     public void displayPanelResized(AbNDisplayPanel displayPanel) {
         
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "displayPanelResized",
+                ""));
+        
         this.setBounds(10, 
                 displayPanel.getBounds().height - panelSize.height - 10, 
                 panelSize.width, 
@@ -174,17 +189,30 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     }
     
     public void setCurrentDataManager(ProtegeLiveTaxonomyDataManager dataManager) {
+
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "setCurrentDataManager",
+                ""));
+        
         this.optCurrentDataManager = Optional.of(dataManager);
     }
     
     public void setInferredTaxonomyDirty() {
-                
+
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "setInferredTaxonomyDirty",
+                ""));
+
         this.lblRefreshInferred.setText("<html><font color = 'RED'>"
                 + "Synchronize reasoner to update inferred diff taxonomy");
-        
     }
     
     public void clearInferredTaxonomyDirty() {
-         this.lblRefreshInferred.setText(" ");
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "clearInferredTaxonomyDirty",
+                ""));
+        
+        this.lblRefreshInferred.setText(" ");
     }
 }

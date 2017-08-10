@@ -46,4 +46,22 @@ public class DerivationSettings {
     public Set<InheritableProperty> getAvailableProperties() {
         return availableProperties;
     }
+    
+    @Override
+    public String toString() {
+        
+        String result = "{root: %s, "
+                + "typesAndUsages: %s, "
+                + "selectedProperties: %s, "
+                + "availableProperties: %s}";
+        
+        result = String.format(
+                result, 
+                root.getName(), 
+                typesAndUsages.toString(),
+                selectedProperties.toString(), 
+                availableProperties.toString());
+        
+        return result;
+    }
 }
