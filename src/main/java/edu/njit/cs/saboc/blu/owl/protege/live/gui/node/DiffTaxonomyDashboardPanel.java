@@ -1,8 +1,9 @@
 package edu.njit.cs.saboc.blu.owl.protege.live.gui.node;
 
-import edu.njit.cs.saboc.blu.core.abn.node.PartitionedNode;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.Area;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PArea;
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffArea;
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPArea;
 import edu.njit.cs.saboc.blu.core.gui.gep.panels.details.loading.LoadingPanel;
 import edu.njit.cs.saboc.blu.owl.protege.live.configuration.ProtegeDiffPAreaTaxonomyConfiguration;
 import java.awt.BorderLayout;
@@ -21,9 +22,8 @@ public class DiffTaxonomyDashboardPanel extends JPanel {
     private Optional<DiffPAreaSummaryPanel> pareaSummaryPanel = Optional.empty();
     private Optional<DiffAreaSummaryPanel> areaDetailsPanel = Optional.empty();
 
-    private Optional<PArea> selectedPArea = Optional.empty();
-    
-    private Optional<PartitionedNode> selectedArea = Optional.empty();
+    private Optional<DiffPArea> selectedPArea = Optional.empty();
+    private Optional<DiffArea> selectedArea = Optional.empty();
     
     public DiffTaxonomyDashboardPanel() {
         super(new BorderLayout());
@@ -56,7 +56,7 @@ public class DiffTaxonomyDashboardPanel extends JPanel {
 
         clearPartitionedNodePanels();
 
-        this.selectedPArea = Optional.of(parea);
+        this.selectedPArea = Optional.of((DiffPArea)parea);
 
         if (pareaSummaryPanel.isPresent()) {
             
@@ -80,7 +80,7 @@ public class DiffTaxonomyDashboardPanel extends JPanel {
         
         clearNodePanels();
 
-        this.selectedArea = Optional.of(area);
+        this.selectedArea = Optional.of((DiffArea)area);
 
         if (areaDetailsPanel.isPresent()) {
             setDetailsPanelContents(loadingPanel);

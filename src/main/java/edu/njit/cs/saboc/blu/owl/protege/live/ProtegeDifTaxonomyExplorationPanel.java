@@ -122,7 +122,7 @@ public class ProtegeDifTaxonomyExplorationPanel extends JPanel {
                 
         displayPanel.initialize(graph, painter, initializer.getInitialDisplayAction());
         dashboardPanel.initialize(config);
-        
+
         initializer.initializeAbNDisplayPanel(displayPanel, firstLoad);
         
         this.firstLoad = false;

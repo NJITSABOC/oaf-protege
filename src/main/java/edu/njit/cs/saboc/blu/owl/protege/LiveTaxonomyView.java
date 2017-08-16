@@ -1,7 +1,11 @@
 package edu.njit.cs.saboc.blu.owl.protege;
 
+import edu.njit.cs.saboc.blu.core.abn.diff.change.ChangeState;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.InheritableProperty;
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPArea;
+import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPAreaTaxonomy;
 import edu.njit.cs.saboc.blu.core.graph.AbstractionNetworkGraph;
+import edu.njit.cs.saboc.blu.core.graph.nodes.SinglyRootedNodeEntry;
 import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffPAreaTaxonomyGraph;
 import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.SinglyRootedNodeLabelCreator;
 import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.pareataxonomy.DiffTaxonomyPainter;
@@ -29,6 +33,7 @@ import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -37,6 +42,8 @@ import org.protege.editor.owl.model.event.OWLModelManagerListener;
 import org.protege.editor.owl.model.io.IOListener;
 import org.protege.editor.owl.model.io.IOListenerEvent;
 import org.protege.editor.owl.ui.view.AbstractOWLViewComponent;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyChangeListener;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
@@ -211,6 +218,57 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
             @Override
             public void resetFixedPointStart() {
                resetFixedPoint();
+            }
+        });
+        
+        
+        getOWLWorkspace().getOWLSelectionModel().addListener( () -> {
+            
+            if(explorationPanel.getDisplayPanel().getGraph() == null) {
+                return;
+            }
+            
+            OWLEntity selectedEntity = getOWLWorkspace().getOWLSelectionModel().getSelectedEntity();
+            
+            if (selectedEntity != null && selectedEntity.isOWLClass()) {
+
+                OWLOntology ontology = getOWLModelManager().getActiveOntology();
+
+                ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
+
+                OWLClass cls = selectedEntity.asOWLClass();
+                OWLConcept concept = currentOntologyDataManager.getOntology().getOWLConceptFor(cls);
+                
+                DiffPAreaTaxonomy diffTaxonomy = 
+                        (DiffPAreaTaxonomy)explorationPanel.getDisplayPanel().getGraph().getAbstractionNetwork();
+                
+                Set<DiffPArea> nodes = diffTaxonomy.getNodesWith(concept);
+                
+                if(nodes.isEmpty()) {
+                    return;
+                }
+                
+                DiffPArea node;
+                
+                if(nodes.size() == 1) {
+                    node = nodes.iterator().next();
+                } else {
+                    
+                    Optional<DiffPArea> optIntroducedNode = nodes.stream().filter( (parea) -> {
+                        return parea.getPAreaState() == ChangeState.Introduced;
+                    }).findAny();
+                    
+                    if(!optIntroducedNode.isPresent()) {
+                        return;
+                    }
+                    
+                    node = optIntroducedNode.get();
+                }
+                
+                SinglyRootedNodeEntry entry = explorationPanel.getDisplayPanel().
+                            getGraph().getNodeEntries().get(node);
+                
+                explorationPanel.getDisplayPanel().getAutoScroller().autoNavigateToNodeEntry(entry);
             }
         });
 

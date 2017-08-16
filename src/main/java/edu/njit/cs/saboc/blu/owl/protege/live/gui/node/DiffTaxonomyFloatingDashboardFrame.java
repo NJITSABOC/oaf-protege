@@ -29,7 +29,7 @@ public class DiffTaxonomyFloatingDashboardFrame extends JInternalFrame {
 
         this.add(internalPanel);
 
-        this.setSize(500, 100);
+        this.setSize(500, 300);
 
         JComponent titlePanel = (BasicInternalFrameTitlePane) ((BasicInternalFrameUI) getUI()).getNorthPane();
         titlePanel.setPreferredSize(new Dimension(-1, 10));
