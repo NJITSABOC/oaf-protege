@@ -35,7 +35,9 @@ public class DiffPAreaSummaryPanel extends BaseNodeInformationPanel<PArea> {
     
     private final DiffRootChangeExplanationPanel<DiffPArea> rootChangesPanel;
     
-    public DiffPAreaSummaryPanel(ProtegeDiffPAreaTaxonomyConfiguration diffConfig) {
+    public DiffPAreaSummaryPanel(
+            ProtegeDiffPAreaTaxonomyConfiguration diffConfig) {
+        
         this.optCurrentPArea = Optional.empty();
 
         this.nodeNameLabel = new DetailsPanelLabel(" ");
@@ -64,10 +66,14 @@ public class DiffPAreaSummaryPanel extends BaseNodeInformationPanel<PArea> {
 
         this.changeDetailsTabs = new JTabbedPane();
         
-        this.diffPAreaChangesPanel = new DiffNodeChangesPanel<>(diffConfig);
+        this.diffPAreaChangesPanel = new DiffNodeChangesPanel<>(
+                diffConfig,
+                diffConfig.getTextConfiguration());
         
         this.rootChangesPanel = new DiffRootChangeExplanationPanel<>(
-            diffConfig, new OWLDiffPAreaChangeExplanationFactory(diffConfig));
+                diffConfig, 
+                diffConfig.getTextConfiguration(),
+                new OWLDiffPAreaChangeExplanationFactory(diffConfig));
         
         this.changeDetailsTabs.addTab("Diff PArea Changes", diffPAreaChangesPanel);
         this.changeDetailsTabs.addTab("Root Class Changes", rootChangesPanel);

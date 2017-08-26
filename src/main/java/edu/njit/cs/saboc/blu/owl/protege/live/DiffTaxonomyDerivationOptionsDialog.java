@@ -2,11 +2,16 @@ package edu.njit.cs.saboc.blu.owl.protege.live;
 
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.ProtegeLiveTaxonomyDataManager;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.InheritableProperty;
+import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLInheritableProperty;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.wizard.OWLPAreaTaxonomyWizardPanel;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.wizard.OWLPAreaTaxonomyWizardPanel.OWLPAreaTaxonomyDerivationAction;
+import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
 import edu.njit.cs.saboc.blu.owl.protege.LiveTaxonomyView;
 import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.LiveDiffTaxonomyManager;
+import edu.njit.cs.saboc.blu.owl.utils.owlproperties.PropertyTypeAndUsage;
+import java.util.Optional;
 import java.util.Set;
 import javax.swing.JDialog;
 import org.slf4j.Logger;
@@ -21,22 +26,30 @@ public class DiffTaxonomyDerivationOptionsDialog extends JDialog {
     private final Logger logger = LoggerFactory.getLogger(DiffTaxonomyDerivationOptionsDialog.class);
     
     private final OWLPAreaTaxonomyWizardPanel wizardPanel;
+        
+    private Optional<ProtegeLiveTaxonomyDataManager> optProtegeDataManager = Optional.empty();
 
+    
     public DiffTaxonomyDerivationOptionsDialog(
             LiveTaxonomyView protegeTaxonomyView,
-            ProtegeLiveTaxonomyDataManager protegeDataManager,
             OWLAbNFrameManager frameManager) {
         
-         logger.debug(LogMessageGenerator.createLiveDiffString(
+        logger.debug(LogMessageGenerator.createLiveDiffString(
                     "DiffTaxonomyDerivationOptionsDialog", 
                     "Constructed"));
-        
+ 
         OWLPAreaTaxonomyDerivationAction derivationAction = 
                 (dataManager, 
                         root, 
                         typesAndUsages, 
                         availableProperties, 
                         selectedProperties) -> {
+                    
+            if(!optProtegeDataManager.isPresent()) {
+                return;
+            }
+            
+            ProtegeLiveTaxonomyDataManager protegeDataManager = optProtegeDataManager.get();
                     
             String debugMessage = String.format("root: %s, typesAndUsages: %s, availableProperties: %s, selectedProperties: %s",
                     root.getName(),
@@ -63,19 +76,28 @@ public class DiffTaxonomyDerivationOptionsDialog extends JDialog {
             this.dispose();
         };
         
+        // TODO: This doesn't propertly handle the removal of a property
         this.wizardPanel = new OWLPAreaTaxonomyWizardPanel(derivationAction, frameManager);
-        this.wizardPanel.initialize(protegeDataManager);
-        
+
         this.add(wizardPanel);
         
-        this.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        this.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
 
         this.setResizable(false);
         this.setSize(1200, 600);
         this.setModal(true);
         
         this.setLocationRelativeTo(null);
+    }
+    
+    public void setCurrentDataManager(ProtegeLiveTaxonomyDataManager dataManager) {
+        this.optProtegeDataManager = Optional.of(dataManager);
         
-        this.setVisible(true);
+        this.wizardPanel.initialize(dataManager);
+    }
+    
+    public void clearDataManager() {
+        this.optProtegeDataManager = Optional.empty();
+        this.wizardPanel.clearContents();
     }
 }

@@ -55,7 +55,9 @@ public class DiffAreaSummaryPanel extends BaseNodeInformationPanel<Area> {
         this.add(nodeNameLabel, BorderLayout.CENTER);
         this.add(optionsPanel, BorderLayout.EAST);
         
-        this.diffAreaChangesPanel = new DiffNodeChangesPanel<>(diffConfig);
+        this.diffAreaChangesPanel = new DiffNodeChangesPanel<>(
+                diffConfig,
+                diffConfig.getTextConfiguration().getBaseAbNTextConfiguration());
         
         this.diffAreaChangesPanel.setPreferredSize(new Dimension(-1, 200));
         

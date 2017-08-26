@@ -8,6 +8,7 @@ import edu.njit.cs.saboc.blu.core.gui.gep.panels.details.models.OAFAbstractTable
 import edu.njit.cs.saboc.blu.core.gui.graphframe.AbNDisplayManager;
 import edu.njit.cs.saboc.blu.owl.gui.gep.panels.pareataxonomy.OWLPropertyTableModel;
 import edu.njit.cs.saboc.blu.owl.gui.gep.panels.pareataxonomy.diff.configuration.OWLDiffPAreaTaxonomyUIConfiguration;
+import org.protege.editor.owl.model.OWLWorkspace;
 
 /**
  *
@@ -25,8 +26,14 @@ public class ProtegeDiffPAreaTaxonomyUIConfiguration extends OWLDiffPAreaTaxonom
                 displayListener);
     }
 
-    public ProtegeDiffPAreaTaxonomyUIConfiguration(ProtegeDiffPAreaTaxonomyConfiguration config, AbNDisplayManager displayListener) {
-        this(config, new ProtegeDiffPAreaTaxonomyListenerConfiguration(config), displayListener);
+    public ProtegeDiffPAreaTaxonomyUIConfiguration(
+            ProtegeDiffPAreaTaxonomyConfiguration config, 
+            OWLWorkspace workspace,
+            AbNDisplayManager displayListener) {
+        
+        this(config, 
+                new ProtegeDiffPAreaTaxonomyListenerConfiguration(config, workspace), 
+                displayListener);
     }
     
     @Override

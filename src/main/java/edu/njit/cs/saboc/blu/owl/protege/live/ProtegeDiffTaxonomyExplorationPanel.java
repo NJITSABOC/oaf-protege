@@ -11,6 +11,7 @@ import edu.njit.cs.saboc.blu.core.gui.gep.initializer.BaseAbNExplorationPanelIni
 import edu.njit.cs.saboc.blu.core.gui.gep.panels.configuration.AbNConfiguration;
 import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.AbNPainter;
 import edu.njit.cs.saboc.blu.core.gui.gep.warning.AbNWarningManager;
+import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
 import edu.njit.cs.saboc.blu.owl.protege.live.configuration.ProtegeDiffPAreaTaxonomyConfiguration;
 import edu.njit.cs.saboc.blu.owl.protege.live.gui.node.DiffTaxonomyDashboardPanel;
 import edu.njit.cs.saboc.blu.owl.protege.live.gui.node.DiffTaxonomyFloatingDashboardFrame;
@@ -18,12 +19,16 @@ import java.awt.BorderLayout;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import javax.swing.JPanel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Chris Ochs
  */
-public class ProtegeDifTaxonomyExplorationPanel extends JPanel {
+public class ProtegeDiffTaxonomyExplorationPanel extends JPanel {
+    
+    private final Logger logger = LoggerFactory.getLogger(ProtegeDiffTaxonomyExplorationPanel.class);
 
     private AbNConfiguration configuration;
     
@@ -34,9 +39,13 @@ public class ProtegeDifTaxonomyExplorationPanel extends JPanel {
     private final DiffTaxonomyFloatingDashboardFrame dashboardFrame;
     private final DiffTaxonomyDashboardPanel dashboardPanel;
 
-    public ProtegeDifTaxonomyExplorationPanel() {
+    public ProtegeDiffTaxonomyExplorationPanel() {
         
         super(new BorderLayout());
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "ProtegeDifTaxonomyExplorationPanel", 
+                ""));
         
         this.warningManager = new AbNWarningManager() {
             
@@ -50,8 +59,10 @@ public class ProtegeDifTaxonomyExplorationPanel extends JPanel {
 
             @Override
             public void nodeEntrySelected(SinglyRootedNodeEntry nodeEntry) {
+                
                 dashboardPanel.displayDetailsForPArea((PArea)nodeEntry.getNode());
                 dashboardFrame.setVisible(true);
+                
             }
 
             @Override
@@ -61,6 +72,7 @@ public class ProtegeDifTaxonomyExplorationPanel extends JPanel {
                 
                 dashboardPanel.displayDetailsForArea(region.getArea());
                 dashboardFrame.setVisible(true);
+                
             }
 
             @Override
@@ -92,6 +104,11 @@ public class ProtegeDifTaxonomyExplorationPanel extends JPanel {
     }
     
     public AbNDisplayPanel getDisplayPanel() {
+        
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "ProtegeDiffTaxonomyExplorationPanel - getDisplayPanel",
+                ""));
+        
         return displayPanel;
     }
     
@@ -103,6 +120,10 @@ public class ProtegeDifTaxonomyExplorationPanel extends JPanel {
             AbstractionNetworkGraph graph, 
             ProtegeDiffPAreaTaxonomyConfiguration config, 
             AbNPainter painter) {
+         
+         logger.debug(LogMessageGenerator.createLiveDiffString(
+                 "ProtegeDiffTaxonomyExplorationPanel - initialize",
+                 ""));
          
          initialize(graph, 
                  config, 
@@ -118,9 +139,18 @@ public class ProtegeDifTaxonomyExplorationPanel extends JPanel {
             AbNPainter painter,
             AbNExplorationPanelGUIInitializer initializer) {
         
+        logger.debug(LogMessageGenerator.createLiveDiffString(
+                "ProtegeDiffTaxonomyExplorationPanel - initialize",
+                ""));
+
         this.configuration = config;
+        
+        boolean dashboardFrameVisible = dashboardFrame.isVisible();
+        
+        dashboardFrame.setVisible(false);
                 
         displayPanel.initialize(graph, painter, initializer.getInitialDisplayAction());
+        
         dashboardPanel.initialize(config);
 
         initializer.initializeAbNDisplayPanel(displayPanel, firstLoad);
@@ -130,5 +160,12 @@ public class ProtegeDifTaxonomyExplorationPanel extends JPanel {
         displayPanel.resetUpdateables();
         
         config.getUIConfiguration().setDisplayPanel(displayPanel);
+        
+        dashboardFrame.revalidate();
+        dashboardFrame.repaint();
+        
+        if(dashboardFrameVisible && dashboardPanel.anyNodeSelected()) {
+            dashboardFrame.setVisible(true);
+        }
     }
 }

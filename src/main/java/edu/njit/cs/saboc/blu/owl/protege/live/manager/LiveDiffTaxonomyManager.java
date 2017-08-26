@@ -90,7 +90,7 @@ public class LiveDiffTaxonomyManager {
                         "initialize",
                         ""));
         
-        this.statedDiffTaxonomyManager.initialize(dataManager.getOntology().getConceptHierarchy());
+        this.statedDiffTaxonomyManager.initialize(dataManager.getOntology());
     }
     
     public void setInferredRelsAvailable(boolean value) {
@@ -108,8 +108,7 @@ public class LiveDiffTaxonomyManager {
             
             inferredDiffTaxonomyManager.setCurrentDerivationSettings(currentDerivationSettings);
             
-            inferredDiffTaxonomyManager.initialize(
-                    dataManager.createInferredOntology().getConceptHierarchy());
+            inferredDiffTaxonomyManager.initialize(dataManager.createInferredOntology());
             
             this.optTnferredDiffTaxonomyManager = Optional.of(inferredDiffTaxonomyManager);
         } else {
@@ -128,7 +127,7 @@ public class LiveDiffTaxonomyManager {
                         "update",
                         ""));
         
-        this.statedDiffTaxonomyManager.update(dataManager.getOntology().getConceptHierarchy());
+        this.statedDiffTaxonomyManager.update(dataManager.getOntology());
 
         if (this.optTnferredDiffTaxonomyManager.isPresent()) {
             
@@ -137,8 +136,7 @@ public class LiveDiffTaxonomyManager {
                             "update",
                             "updating inferred"));
             
-            optTnferredDiffTaxonomyManager.get().update(
-                    dataManager.createInferredOntology().getConceptHierarchy());
+            optTnferredDiffTaxonomyManager.get().update(dataManager.createInferredOntology());
         }
     }
     

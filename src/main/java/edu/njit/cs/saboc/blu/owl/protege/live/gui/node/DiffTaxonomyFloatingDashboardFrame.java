@@ -1,13 +1,8 @@
 package edu.njit.cs.saboc.blu.owl.protege.live.gui.node;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import javax.swing.JComponent;
 import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
-import javax.swing.plaf.basic.BasicInternalFrameUI;
 
 /**
  *
@@ -30,10 +25,6 @@ public class DiffTaxonomyFloatingDashboardFrame extends JInternalFrame {
         this.add(internalPanel);
 
         this.setSize(500, 300);
-
-        JComponent titlePanel = (BasicInternalFrameTitlePane) ((BasicInternalFrameUI) getUI()).getNorthPane();
-        titlePanel.setPreferredSize(new Dimension(-1, 10));
-        titlePanel.setBackground(new Color(100, 100, 255));
 
         this.setFrameIcon(null);
 

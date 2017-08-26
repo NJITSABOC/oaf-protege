@@ -22,7 +22,7 @@ import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.DerivationTypeChangedListener;
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.RelationshipType;
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.LiveDiffTaxonomyManager;
-import edu.njit.cs.saboc.blu.owl.protege.live.ProtegeDifTaxonomyExplorationPanel;
+import edu.njit.cs.saboc.blu.owl.protege.live.ProtegeDiffTaxonomyExplorationPanel;
 import edu.njit.cs.saboc.blu.owl.protege.live.configuration.ProtegeDiffPAreaTaxonomyConfiguration;
 import edu.njit.cs.saboc.blu.owl.protege.live.configuration.ProtegeDiffPAreaTaxonomyConfigurationFactory;
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.ProtegeLiveTaxonomyDataManager;
@@ -61,7 +61,7 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     
     private final OAFStateFileManager stateFileManager = new OAFStateFileManager("BLUOWL");
 
-    private final ProtegeDifTaxonomyExplorationPanel explorationPanel = new ProtegeDifTaxonomyExplorationPanel();
+    private final ProtegeDiffTaxonomyExplorationPanel explorationPanel = new ProtegeDiffTaxonomyExplorationPanel();
 
     private final Map<OWLOntology, ProtegeLiveTaxonomyDataManager> ontologyManagers = new HashMap<>();
 
@@ -557,8 +557,13 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
                 "displayDiffPAreaTaxonomy",
                 "Displaying taxonomy"));
             
-            ProtegeDiffPAreaTaxonomyConfigurationFactory configFactory = new ProtegeDiffPAreaTaxonomyConfigurationFactory();
-            ProtegeDiffPAreaTaxonomyConfiguration config = configFactory.createConfiguration(diffTaxonomy, displayManager);
+            ProtegeDiffPAreaTaxonomyConfigurationFactory configFactory = 
+                    new ProtegeDiffPAreaTaxonomyConfigurationFactory();
+            
+            ProtegeDiffPAreaTaxonomyConfiguration config = configFactory.createConfiguration(
+                    diffTaxonomy, 
+                    this.getOWLWorkspace(), 
+                    displayManager);
 
             AbstractionNetworkGraph graph = new DiffPAreaTaxonomyGraph(
                     getMyFrame(),

@@ -58,6 +58,8 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     
     private boolean initialized = false;
     
+    private final DiffTaxonomyDerivationOptionsDialog optionsDialog;
+    
     public DerivationSelectionWidget(
             LiveTaxonomyView protegeTaxonomyView, 
             OWLAbNFrameManager frameManager,
@@ -138,17 +140,17 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
         
         derivationPanel.add(relTypePanel);
         
+        optionsDialog = new DiffTaxonomyDerivationOptionsDialog(
+                            protegeTaxonomyView,
+                            frameManager);
+        
         this.btnDerivationOptions = new JButton("Options");
         this.btnDerivationOptions.addActionListener( (ae) -> {
             
             if(this.optCurrentDataManager.isPresent()) {
+                optionsDialog.setCurrentDataManager(optCurrentDataManager.get());
                 
-                 DiffTaxonomyDerivationOptionsDialog optionsDialog = 
-                    new DiffTaxonomyDerivationOptionsDialog(
-                            protegeTaxonomyView,
-                            this.optCurrentDataManager.get(), 
-                            frameManager);
-                 
+                optionsDialog.setVisible(true);
             }
         });
         
@@ -161,7 +163,6 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
             }
 
         });
-        
         
         derivationPanel.add(btnDerivationOptions);
 

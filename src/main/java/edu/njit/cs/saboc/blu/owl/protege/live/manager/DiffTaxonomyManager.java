@@ -4,12 +4,15 @@ import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
+import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLInheritableProperty;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomyFactory;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomy;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomyFactory;
+import edu.njit.cs.saboc.blu.owl.ontology.OAFOWLOntology;
 import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
 import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSettings;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,11 +24,13 @@ public class DiffTaxonomyManager {
     
     private final Logger logger = LoggerFactory.getLogger(DiffTaxonomyManager.class);
 
-    private Hierarchy<OWLConcept> currentHierarchy;
-    
+    private OAFOWLOntology currentOntology = null;
     private PAreaTaxonomy currentTaxonomy = null;
     
+    private OAFOWLOntology previousOntology = null;
     private PAreaTaxonomy lastUpdatedTaxonomy = null;
+    
+    private OAFOWLOntology lastFixedPointOntology = null;
     private PAreaTaxonomy lastFixedPointTaxonomy = null;
     
     private DerivationSettings currentDerivationSettings;
@@ -39,7 +44,7 @@ public class DiffTaxonomyManager {
 
         this.dataManager = dataManager;
     }
-    
+        
     public void setCurrentDerivationSettings(DerivationSettings settings) {
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
@@ -49,17 +54,19 @@ public class DiffTaxonomyManager {
         this.currentDerivationSettings = settings;
     }
     
-    public final void initialize(Hierarchy<OWLConcept> startingHierarchy) {
+    public final void initialize(OAFOWLOntology startingOntology) {
 
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "initialize",
                 String.format("startingHierarchy: %s (%d)", 
-                        startingHierarchy.getRoot().getName(), 
-                        startingHierarchy.size())));
+                        startingOntology.getConceptHierarchy().getRoot().getName(), 
+                        startingOntology.getConceptHierarchy().size())));
         
-        this.currentHierarchy = startingHierarchy;
+        this.currentOntology = startingOntology;
+        this.previousOntology = startingOntology;
+        this.lastFixedPointOntology = startingOntology;
         
-        PAreaTaxonomy startingTaxonomy = this.createTaxonomyFrom(startingHierarchy);
+        PAreaTaxonomy startingTaxonomy = this.createTaxonomyFrom(startingOntology);
         
         this.currentTaxonomy = startingTaxonomy;
         this.lastUpdatedTaxonomy = startingTaxonomy;
@@ -72,20 +79,22 @@ public class DiffTaxonomyManager {
                 "reset",
                 ""));
         
-        this.initialize(currentHierarchy);
+        this.initialize(currentOntology);
     }
     
-    public void update(Hierarchy<OWLConcept> hierarchy) {
+    public void update(OAFOWLOntology ontology) {
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "update",
                 String.format("hierarchy: %s (%d)", 
-                        hierarchy.getRoot().getName(), 
-                        hierarchy.size())));
+                        ontology.getConceptHierarchy().getRoot().getName(), 
+                        ontology.getConceptHierarchy().size())));
         
-        this.currentHierarchy = hierarchy;
+        this.previousOntology = this.currentOntology;
         
-        this.setCurrentTaxonomy(createTaxonomyFrom(hierarchy));
+        this.currentOntology = ontology;
+
+        this.setCurrentTaxonomy(createTaxonomyFrom(ontology));
     }
     
     private void setCurrentTaxonomy(PAreaTaxonomy startingTaxonomy) {
@@ -97,6 +106,7 @@ public class DiffTaxonomyManager {
                        startingTaxonomy.getSourceHierarchy().size())));
         
         this.lastUpdatedTaxonomy = this.currentTaxonomy;
+        
         this.currentTaxonomy = startingTaxonomy;
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
@@ -115,12 +125,11 @@ public class DiffTaxonomyManager {
         OWLDiffPAreaTaxonomy diffTaxonomy
                 = (OWLDiffPAreaTaxonomy) diffTaxonomyGenerator.createDiffPAreaTaxonomy(
                         new OWLDiffPAreaTaxonomyFactory(lastFixedPointTaxonomy, currentTaxonomy),
-                        dataManager.getOntology(),
+                        lastFixedPointOntology,
                         lastFixedPointTaxonomy,
-                        dataManager.getOntology(),
+                        currentOntology,
                         currentTaxonomy);
-        
-        
+                
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "deriveFixedPointDiffTaxonomy",
                 String.format("before: %s | after: %s", 
@@ -141,9 +150,9 @@ public class DiffTaxonomyManager {
         OWLDiffPAreaTaxonomy diffTaxonomy
                 = (OWLDiffPAreaTaxonomy) diffTaxonomyGenerator.createDiffPAreaTaxonomy(
                         new OWLDiffPAreaTaxonomyFactory(lastUpdatedTaxonomy, currentTaxonomy),
-                        dataManager.getOntology(),
+                        previousOntology,
                         lastUpdatedTaxonomy,
-                        dataManager.getOntology(),
+                        currentOntology,
                         currentTaxonomy);
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
@@ -155,13 +164,13 @@ public class DiffTaxonomyManager {
         return diffTaxonomy;
     }
     
-    private PAreaTaxonomy createTaxonomyFrom(Hierarchy<OWLConcept> hierarchy) {
+    private PAreaTaxonomy createTaxonomyFrom(OAFOWLOntology ontology) {
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "createTaxonomyFrom",
                 String.format("hierarchy: %s (%d)",
-                        hierarchy.getRoot().getName(),
-                        hierarchy.size())));
+                        ontology.getConceptHierarchy().getRoot().getName(),
+                        ontology.getConceptHierarchy().size())));
         
         OWLPAreaTaxonomyFactory factory = new OWLPAreaTaxonomyFactory(
                 dataManager, 
@@ -169,8 +178,9 @@ public class DiffTaxonomyManager {
         
         PAreaTaxonomyGenerator generator = new PAreaTaxonomyGenerator();
 
-        Hierarchy<OWLConcept> taxonomySubhierarchy = hierarchy.getSubhierarchyRootedAt(
-                this.currentDerivationSettings.getRoot());
+        Hierarchy<OWLConcept> taxonomySubhierarchy = 
+                ontology.getConceptHierarchy().getSubhierarchyRootedAt(
+                    this.currentDerivationSettings.getRoot());
 
         PAreaTaxonomy taxonomy = generator.derivePAreaTaxonomy(factory, taxonomySubhierarchy);
         
@@ -182,7 +192,6 @@ public class DiffTaxonomyManager {
                     String.format("Creating relationship subtaxonomy: %s", 
                             this.currentDerivationSettings.getSelectedProperties().toString())));
 
-            
             taxonomy = taxonomy.getRelationshipSubtaxonomy(this.currentDerivationSettings.getSelectedProperties());
         }
         
