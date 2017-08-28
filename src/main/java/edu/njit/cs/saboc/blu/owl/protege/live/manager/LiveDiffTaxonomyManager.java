@@ -2,6 +2,7 @@ package edu.njit.cs.saboc.blu.owl.protege.live.manager;
 
 import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSettings;
+import java.util.ArrayList;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,13 +17,19 @@ public class LiveDiffTaxonomyManager {
     
     private final DiffTaxonomyManager statedDiffTaxonomyManager;
     
-    private Optional<DiffTaxonomyManager> optTnferredDiffTaxonomyManager;
+    private Optional<DiffTaxonomyManager> optInferredDiffTaxonomyManager;
     
     private final ProtegeLiveTaxonomyDataManager dataManager;
 
     private DerivationSettings currentDerivationSettings = null;
     
     private boolean inferredRelsAvailable = false;
+    
+    public interface DerivationSettingsChangedListener {
+        public void derivationSettingsChanged(DerivationSettings settings);
+    }
+    
+    private final ArrayList<DerivationSettingsChangedListener> derivationChangedListeners = new ArrayList<>();
     
     public LiveDiffTaxonomyManager(ProtegeLiveTaxonomyDataManager dataManager) {
         
@@ -34,7 +41,15 @@ public class LiveDiffTaxonomyManager {
         
         this.statedDiffTaxonomyManager = new DiffTaxonomyManager(dataManager);
         
-        this.optTnferredDiffTaxonomyManager = Optional.empty();
+        this.optInferredDiffTaxonomyManager = Optional.empty();
+    }
+    
+    public void addDerivationSettingsChangedListener(DerivationSettingsChangedListener listener) {
+        this.derivationChangedListeners.add(listener);
+    }
+    
+    public void removeDerivationSettingsChangedListener(DerivationSettingsChangedListener listener) {
+        this.derivationChangedListeners.remove(listener);
     }
     
     public void setDerivationSettings(DerivationSettings settings) {
@@ -48,15 +63,19 @@ public class LiveDiffTaxonomyManager {
         
         this.statedDiffTaxonomyManager.setCurrentDerivationSettings(settings);
         
-        if(this.optTnferredDiffTaxonomyManager.isPresent()) {
+        if(this.optInferredDiffTaxonomyManager.isPresent()) {
             
             logger.debug(
                 LogMessageGenerator.createLiveDiffString(
                         "setDerivationSettings",
                         "Setting inferred taxomonomy derivation settings"));
             
-            optTnferredDiffTaxonomyManager.get().setCurrentDerivationSettings(settings);
+            optInferredDiffTaxonomyManager.get().setCurrentDerivationSettings(settings);
         }
+        
+        derivationChangedListeners.forEach( (listener) -> {
+            listener.derivationSettingsChanged(settings);
+        });
     }
     
     public Optional<DerivationSettings> getDerivationSettings() {
@@ -72,14 +91,14 @@ public class LiveDiffTaxonomyManager {
         
         this.statedDiffTaxonomyManager.reset();
 
-        if (this.optTnferredDiffTaxonomyManager.isPresent()) {
+        if (this.optInferredDiffTaxonomyManager.isPresent()) {
             
             logger.debug(
                     LogMessageGenerator.createLiveDiffString(
                             "reset",
                             "resetting inferred taxonomy manager"));
             
-            optTnferredDiffTaxonomyManager.get().reset();
+            optInferredDiffTaxonomyManager.get().reset();
         }
     }
     
@@ -110,9 +129,9 @@ public class LiveDiffTaxonomyManager {
             
             inferredDiffTaxonomyManager.initialize(dataManager.createInferredOntology());
             
-            this.optTnferredDiffTaxonomyManager = Optional.of(inferredDiffTaxonomyManager);
+            this.optInferredDiffTaxonomyManager = Optional.of(inferredDiffTaxonomyManager);
         } else {
-            this.optTnferredDiffTaxonomyManager = Optional.empty();
+            this.optInferredDiffTaxonomyManager = Optional.empty();
         }
     }
     
@@ -129,14 +148,14 @@ public class LiveDiffTaxonomyManager {
         
         this.statedDiffTaxonomyManager.update(dataManager.getOntology());
 
-        if (this.optTnferredDiffTaxonomyManager.isPresent()) {
+        if (this.optInferredDiffTaxonomyManager.isPresent()) {
             
             logger.debug(
                     LogMessageGenerator.createLiveDiffString(
                             "update",
                             "updating inferred"));
             
-            optTnferredDiffTaxonomyManager.get().update(dataManager.createInferredOntology());
+            optInferredDiffTaxonomyManager.get().update(dataManager.createInferredOntology());
         }
     }
     
@@ -145,6 +164,6 @@ public class LiveDiffTaxonomyManager {
     }
     
     public DiffTaxonomyManager getInferredTaxonomyManager() {
-        return this.optTnferredDiffTaxonomyManager.get();
+        return this.optInferredDiffTaxonomyManager.get();
     }
 }

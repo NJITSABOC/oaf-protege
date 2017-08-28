@@ -61,12 +61,12 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     
     private final OAFStateFileManager stateFileManager = new OAFStateFileManager("BLUOWL");
 
-    private final ProtegeDiffTaxonomyExplorationPanel explorationPanel = new ProtegeDiffTaxonomyExplorationPanel();
-
     private final Map<OWLOntology, ProtegeLiveTaxonomyDataManager> ontologyManagers = new HashMap<>();
 
     private final DiffDerivationTypeManager derivationTypeManager = new DiffDerivationTypeManager();
 
+    private ProtegeDiffTaxonomyExplorationPanel explorationPanel;
+    
     private DerivationSelectionWidget derivationSelectionWidget;
     
     private boolean reasonerRunning = false;
@@ -271,17 +271,7 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
                 explorationPanel.getDisplayPanel().getAutoScroller().autoNavigateToNodeEntry(entry);
             }
         });
-
-        this.derivationSelectionWidget = new DerivationSelectionWidget(
-                this,
-                displayManager,
-                explorationPanel.getDisplayPanel(), 
-                derivationTypeManager);
-
-        explorationPanel.getDisplayPanel().addWidget(derivationSelectionWidget);
-
-        this.add(explorationPanel, BorderLayout.CENTER);
-
+        
         getOWLModelManager().addListener(modelListener);
         getOWLModelManager().addOntologyChangeListener(changeListener);
         getOWLModelManager().addIOListener(ontologyIOListener);
@@ -298,6 +288,10 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         OWLOntologyManager ontologyManager = getOWLModelManager().getOWLOntologyManager();
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
+        // TODO: As of right now the plugin can't handle changing ontologies within the same 
+        // view... Need to change ProtegeDiffTaxonomyExplorationPanel to no take
+        // diffManager as argument.
+        
         if (!ontologyManagers.containsKey(ontology)) {
             
             logger.debug(LogMessageGenerator.createLiveDiffString(
@@ -319,11 +313,21 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         }
 
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
-
-        derivationSelectionWidget.setCurrentDataManager(dataManager);
-        
         LiveDiffTaxonomyManager diffManager = dataManager.getDiffTaxonomyManager();
         
+        this.explorationPanel = new ProtegeDiffTaxonomyExplorationPanel(derivationTypeManager, diffManager);
+        this.explorationPanel.getDisplayPanel().addWidget(derivationSelectionWidget);
+
+        this.derivationSelectionWidget = new DerivationSelectionWidget(
+                this,
+                displayManager,
+                explorationPanel.getDisplayPanel(), 
+                derivationTypeManager);
+        
+        this.derivationSelectionWidget.setCurrentDataManager(dataManager);
+
+        this.add(explorationPanel, BorderLayout.CENTER);
+
         diffManager.setDerivationSettings(createDefaultSettings(dataManager));
         diffManager.initialize();
 

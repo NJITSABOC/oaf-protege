@@ -6,6 +6,7 @@ import edu.njit.cs.saboc.blu.core.graph.AbstractionNetworkGraph;
 import edu.njit.cs.saboc.blu.core.graph.nodes.GenericPartitionEntry;
 import edu.njit.cs.saboc.blu.core.graph.nodes.SinglyRootedNodeEntry;
 import edu.njit.cs.saboc.blu.core.gui.gep.AbNDisplayPanel;
+import edu.njit.cs.saboc.blu.core.gui.gep.Viewport;
 import edu.njit.cs.saboc.blu.core.gui.gep.initializer.AbNExplorationPanelGUIInitializer;
 import edu.njit.cs.saboc.blu.core.gui.gep.initializer.BaseAbNExplorationPanelInitializer;
 import edu.njit.cs.saboc.blu.core.gui.gep.panels.configuration.AbNConfiguration;
@@ -15,10 +16,15 @@ import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
 import edu.njit.cs.saboc.blu.owl.protege.live.configuration.ProtegeDiffPAreaTaxonomyConfiguration;
 import edu.njit.cs.saboc.blu.owl.protege.live.gui.node.DiffTaxonomyDashboardPanel;
 import edu.njit.cs.saboc.blu.owl.protege.live.gui.node.DiffTaxonomyFloatingDashboardFrame;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.DerivationTypeChangedListener;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.LiveDiffTaxonomyManager;
 import java.awt.BorderLayout;
+import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,14 +44,26 @@ public class ProtegeDiffTaxonomyExplorationPanel extends JPanel {
     
     private final DiffTaxonomyFloatingDashboardFrame dashboardFrame;
     private final DiffTaxonomyDashboardPanel dashboardPanel;
+    
+    private final DiffDerivationTypeManager derivationTypeManager;
+    private final LiveDiffTaxonomyManager diffTaxonomyManager;
+    
+    private boolean firstLoad = true;
+    
+    private boolean viewportDirty = false;
 
-    public ProtegeDiffTaxonomyExplorationPanel() {
+    public ProtegeDiffTaxonomyExplorationPanel(
+            DiffDerivationTypeManager derivationTypeManager,
+            LiveDiffTaxonomyManager diffTaxonomyManager) {
         
         super(new BorderLayout());
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "ProtegeDifTaxonomyExplorationPanel", 
                 ""));
+        
+        this.derivationTypeManager = derivationTypeManager;
+        this.diffTaxonomyManager = diffTaxonomyManager;
         
         this.warningManager = new AbNWarningManager() {
             
@@ -93,6 +111,28 @@ public class ProtegeDiffTaxonomyExplorationPanel extends JPanel {
             
         });
         
+        derivationTypeManager.addDerivationTypeChangedListener(new DerivationTypeChangedListener() {
+            
+            @Override
+            public void derivationTypeChanged(DiffDerivationTypeManager.DerivationType newDerivationType) {
+                
+            }
+
+            @Override
+            public void relationshipTypeChanged(DiffDerivationTypeManager.RelationshipType version) {
+                viewportDirty = true;
+            }
+
+            @Override
+            public void resetFixedPointStart() {
+                
+            }
+        });
+        
+        diffTaxonomyManager.addDerivationSettingsChangedListener( (derivationSettings) -> {
+            viewportDirty = true;
+        });
+        
         this.dashboardPanel = new DiffTaxonomyDashboardPanel();
         this.dashboardFrame = new DiffTaxonomyFloatingDashboardFrame(dashboardPanel);
         
@@ -130,9 +170,7 @@ public class ProtegeDiffTaxonomyExplorationPanel extends JPanel {
                  painter, 
                  new BaseAbNExplorationPanelInitializer(warningManager));
      }
-     
-    private boolean firstLoad = true;
-    
+
     public void initialize(
             AbstractionNetworkGraph graph, 
             ProtegeDiffPAreaTaxonomyConfiguration config, 
@@ -146,13 +184,14 @@ public class ProtegeDiffTaxonomyExplorationPanel extends JPanel {
         this.configuration = config;
         
         boolean dashboardFrameVisible = dashboardFrame.isVisible();
+        Viewport oldViewport = displayPanel.getViewport();
         
         dashboardFrame.setVisible(false);
-                
+        
         displayPanel.initialize(graph, painter, initializer.getInitialDisplayAction());
         
         dashboardPanel.initialize(config);
-
+        
         initializer.initializeAbNDisplayPanel(displayPanel, firstLoad);
         
         this.firstLoad = false;
@@ -167,5 +206,25 @@ public class ProtegeDiffTaxonomyExplorationPanel extends JPanel {
         if(dashboardFrameVisible && dashboardPanel.anyNodeSelected()) {
             dashboardFrame.setVisible(true);
         }
+        
+        if (!viewportDirty) {
+
+            SwingUtilities.invokeLater(() -> {
+                
+                Viewport currentViewport = displayPanel.getViewport();
+
+                Rectangle region = currentViewport.getViewRegion();
+                
+                region.x = oldViewport.getViewRegion().x;
+                region.y = oldViewport.getViewRegion().y;
+                region.width = oldViewport.getViewRegion().width;
+                region.height = oldViewport.getViewRegion().height;
+                
+                currentViewport.forceZoom(oldViewport.getZoomFactor());
+                
+                viewportDirty = false;
+            });
+        }
+
     }
 }
