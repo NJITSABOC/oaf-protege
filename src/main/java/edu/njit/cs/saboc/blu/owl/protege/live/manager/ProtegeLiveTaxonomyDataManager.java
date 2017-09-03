@@ -33,6 +33,6 @@ public class ProtegeLiveTaxonomyDataManager extends ProtegeOAFOntologyDataManage
     }
     
     public void refreshOntology() {
-        this.reinitialize();
+        this.initialize();
     }
 }

@@ -160,6 +160,8 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
                     ontology);
 
             ontologyManagers.put(ontology, new ProtegeOAFOntologyDataManager(getOWLModelManager(), manager));
+            
+            ontologyManagers.get(ontology).initialize();
         }
         
         ProtegeOAFOntologyDataManager dataManager = ontologyManagers.get(ontology);
@@ -232,7 +234,7 @@ public class OAFAbNProtegePlugin extends AbstractOWLViewComponent {
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeOAFOntologyDataManager currentOntologyDataManager = ontologyManagers.get(ontology);
-        currentOntologyDataManager.reinitialize();
+        currentOntologyDataManager.initialize();
 
         this.graphFrame.setInitializers(createInitializers(currentOntologyDataManager));
 

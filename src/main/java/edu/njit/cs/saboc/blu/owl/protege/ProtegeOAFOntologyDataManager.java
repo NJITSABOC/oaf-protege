@@ -39,7 +39,7 @@ public class ProtegeOAFOntologyDataManager extends OAFOntologyDataManager {
     public void setInferredRelsAvailable(boolean value) {
         this.inferredRelsAvailable = value;
         
-        reinitialize();
+        initialize();
     } 
     
     public boolean inferredRelsAvailable() {

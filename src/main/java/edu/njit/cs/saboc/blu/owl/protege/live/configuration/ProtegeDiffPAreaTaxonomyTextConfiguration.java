@@ -24,11 +24,6 @@ public class ProtegeDiffPAreaTaxonomyTextConfiguration extends OWLDiffPAreaTaxon
     }
 
     @Override
-    public String getContainerHelpDescription(Area area) {
-        return "[OWL DIFF AREA HELP DESCRIPTION]";
-    }
-
-    @Override
     public String getNodeHelpDescription(PArea parea) {
         DiffPArea diffPArea = (DiffPArea)parea;
         

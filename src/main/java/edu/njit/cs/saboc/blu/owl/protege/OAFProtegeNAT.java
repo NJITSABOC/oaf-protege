@@ -16,7 +16,6 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import org.protege.editor.core.ui.util.UIUtil;
 import org.protege.editor.owl.model.OWLModelManager;
@@ -180,7 +179,7 @@ public class OAFProtegeNAT extends AbstractOWLViewComponent {
         OWLOntology ontology = getOWLModelManager().getActiveOntology();
 
         ProtegeOAFOntologyDataManager currentOntologyDataManager = oafOntologyManagers.get(ontology);
-        currentOntologyDataManager.reinitialize();
+        currentOntologyDataManager.initialize();
         
         displayCurrentOntology();
     }
@@ -202,6 +201,8 @@ public class OAFProtegeNAT extends AbstractOWLViewComponent {
                     ontology);
 
             oafOntologyManagers.put(ontology, new ProtegeOAFOntologyDataManager(getOWLModelManager(), dataManager));
+            
+            oafOntologyManagers.get(ontology).initialize();
         }
 
         URI physicalURI = getOWLModelManager().getOntologyPhysicalURI(ontology);

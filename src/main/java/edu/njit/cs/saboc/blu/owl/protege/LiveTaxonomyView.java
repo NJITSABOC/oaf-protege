@@ -310,6 +310,8 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
                             this.getOWLModelManager(),
                             dataManager)
                     );
+            
+            ontologyManagers.get(ontology).initialize();
         }
 
         ProtegeLiveTaxonomyDataManager dataManager = ontologyManagers.get(ontology);
