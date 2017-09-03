@@ -1,5 +1,6 @@
 package edu.njit.cs.saboc.blu.owl.protege.live.manager;
 
+import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffTaxonomySubsetOptions;
 import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSettings;
 import java.util.ArrayList;
@@ -23,10 +24,13 @@ public class LiveDiffTaxonomyManager {
 
     private DerivationSettings currentDerivationSettings = null;
     
+    private DiffTaxonomySubsetOptions currentDisplaySettings = null;
+    
     private boolean inferredRelsAvailable = false;
     
     public interface DerivationSettingsChangedListener {
         public void derivationSettingsChanged(DerivationSettings settings);
+        public void displaySettingsChanged(DiffTaxonomySubsetOptions displaySettings);
     }
     
     private final ArrayList<DerivationSettingsChangedListener> derivationChangedListeners = new ArrayList<>();
@@ -78,8 +82,25 @@ public class LiveDiffTaxonomyManager {
         });
     }
     
+    public void setDisplaySettings(DiffTaxonomySubsetOptions currentDisplaySettings) {
+        logger.debug(
+                LogMessageGenerator.createLiveDiffString(
+                        "setDisplaySettings", 
+                        ""));
+        
+        this.currentDisplaySettings = currentDisplaySettings;
+        
+        derivationChangedListeners.forEach((listener) -> {
+            listener.displaySettingsChanged(currentDisplaySettings);
+        });
+    }
+    
     public Optional<DerivationSettings> getDerivationSettings() {
         return Optional.of(this.currentDerivationSettings);
+    }
+    
+    public Optional<DiffTaxonomySubsetOptions> getDisplaySettings() {
+        return Optional.of(this.currentDisplaySettings);
     }
     
     public void reset() {

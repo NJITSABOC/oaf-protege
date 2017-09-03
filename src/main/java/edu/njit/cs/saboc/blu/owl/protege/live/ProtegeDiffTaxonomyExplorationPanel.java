@@ -5,6 +5,7 @@ import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.Region;
 import edu.njit.cs.saboc.blu.core.graph.AbstractionNetworkGraph;
 import edu.njit.cs.saboc.blu.core.graph.nodes.GenericPartitionEntry;
 import edu.njit.cs.saboc.blu.core.graph.nodes.SinglyRootedNodeEntry;
+import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffTaxonomySubsetOptions;
 import edu.njit.cs.saboc.blu.core.gui.gep.AbNDisplayPanel;
 import edu.njit.cs.saboc.blu.core.gui.gep.Viewport;
 import edu.njit.cs.saboc.blu.core.gui.gep.initializer.AbNExplorationPanelGUIInitializer;
@@ -19,6 +20,7 @@ import edu.njit.cs.saboc.blu.owl.protege.live.gui.node.DiffTaxonomyFloatingDashb
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager;
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager.DerivationTypeChangedListener;
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.LiveDiffTaxonomyManager;
+import edu.njit.cs.saboc.blu.owl.protege.live.manager.LiveDiffTaxonomyManager.DerivationSettingsChangedListener;
 import java.awt.BorderLayout;
 import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
@@ -129,10 +131,18 @@ public class ProtegeDiffTaxonomyExplorationPanel extends JPanel {
             }
         });
         
-        diffTaxonomyManager.addDerivationSettingsChangedListener( (derivationSettings) -> {
-            viewportDirty = true;
+        diffTaxonomyManager.addDerivationSettingsChangedListener(new DerivationSettingsChangedListener() {
+            @Override
+            public void derivationSettingsChanged(DerivationSettings settings) {
+                viewportDirty = true;
+            }
+
+            @Override
+            public void displaySettingsChanged(DiffTaxonomySubsetOptions displaySettings) {
+                viewportDirty = true;
+            }
         });
-        
+
         this.dashboardPanel = new DiffTaxonomyDashboardPanel();
         this.dashboardFrame = new DiffTaxonomyFloatingDashboardFrame(dashboardPanel);
         

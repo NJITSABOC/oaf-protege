@@ -7,6 +7,8 @@ import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPAreaTaxonomy;
 import edu.njit.cs.saboc.blu.core.graph.AbstractionNetworkGraph;
 import edu.njit.cs.saboc.blu.core.graph.nodes.SinglyRootedNodeEntry;
 import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffPAreaTaxonomyGraph;
+import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffPAreaTaxonomySubviewLayoutFactory;
+import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffTaxonomySubsetOptions;
 import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.SinglyRootedNodeLabelCreator;
 import edu.njit.cs.saboc.blu.core.gui.gep.utils.drawing.pareataxonomy.DiffTaxonomyPainter;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFStateFileManager;
@@ -30,6 +32,7 @@ import edu.njit.cs.saboc.blu.owl.utils.owlproperties.PropertyTypeAndUsage;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Rectangle;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -318,7 +321,6 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         LiveDiffTaxonomyManager diffManager = dataManager.getDiffTaxonomyManager();
         
         this.explorationPanel = new ProtegeDiffTaxonomyExplorationPanel(derivationTypeManager, diffManager);
-        this.explorationPanel.getDisplayPanel().addWidget(derivationSelectionWidget);
 
         this.derivationSelectionWidget = new DerivationSelectionWidget(
                 this,
@@ -327,10 +329,14 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
                 derivationTypeManager);
         
         this.derivationSelectionWidget.setCurrentDataManager(dataManager);
+        
+        this.explorationPanel.getDisplayPanel().addWidget(derivationSelectionWidget);
 
         this.add(explorationPanel, BorderLayout.CENTER);
 
-        diffManager.setDerivationSettings(createDefaultSettings(dataManager));
+        diffManager.setDerivationSettings(createDefaultDerivationSettings(dataManager));
+        diffManager.setDisplaySettings(createDefaultDisplaySettings());
+        
         diffManager.initialize();
 
         OWLDiffPAreaTaxonomy diffTaxonomy;
@@ -341,7 +347,7 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
             diffTaxonomy = diffManager.getStatedDiffTaxonomyManager().deriveProgressiveDiffTaxonomy();
         }
 
-        displayDiffPAreaTaxonomy(diffTaxonomy);
+        displayDiffPAreaTaxonomy(diffTaxonomy, diffManager.getDisplaySettings().get());
     }
     
     private void handleReasonerStopped() {
@@ -393,7 +399,7 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         }
     }
     
-    private DerivationSettings createDefaultSettings(ProtegeLiveTaxonomyDataManager dataManager) {
+    private DerivationSettings createDefaultDerivationSettings(ProtegeLiveTaxonomyDataManager dataManager) {
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "createDefaultSettings",
@@ -414,6 +420,14 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
                 usages, 
                 (Set<InheritableProperty>)(Set<?>)properties, 
                 (Set<InheritableProperty>)(Set<?>)properties);
+    }
+    
+    private DiffTaxonomySubsetOptions createDefaultDisplaySettings() {
+        
+        Set<ChangeState> allowedChangeTypes = new HashSet<>(
+            Arrays.asList(ChangeState.values()));
+        
+        return new DiffTaxonomySubsetOptions(allowedChangeTypes, allowedChangeTypes);
     }
 
     private JFrame getMyFrame() {
@@ -520,7 +534,7 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
             diffTaxonomy = manager.getStatedDiffTaxonomyManager().deriveProgressiveDiffTaxonomy();
         }
 
-        displayDiffPAreaTaxonomy(diffTaxonomy);
+         displayDiffPAreaTaxonomy(diffTaxonomy, manager.getDisplaySettings().get());
     }
 
     private void updateInferredTaxonomy(LiveDiffTaxonomyManager manager) {
@@ -548,10 +562,12 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
             diffTaxonomy = manager.getInferredTaxonomyManager().deriveProgressiveDiffTaxonomy();
         }
 
-        displayDiffPAreaTaxonomy(diffTaxonomy);
+        displayDiffPAreaTaxonomy(diffTaxonomy, manager.getDisplaySettings().get());
     }
 
-    private void displayDiffPAreaTaxonomy(OWLDiffPAreaTaxonomy diffTaxonomy) {
+    private void displayDiffPAreaTaxonomy(
+            OWLDiffPAreaTaxonomy diffTaxonomy, 
+            DiffTaxonomySubsetOptions displayOptions) {
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "displayDiffPAreaTaxonomy",
@@ -575,7 +591,8 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
                     getMyFrame(),
                     diffTaxonomy,
                     new SinglyRootedNodeLabelCreator(),
-                    config);
+                    config, 
+                    new DiffPAreaTaxonomySubviewLayoutFactory(displayOptions));
 
             graph.setBounds(0, 0, graph.getAbNWidth(), graph.getAbNHeight());
 

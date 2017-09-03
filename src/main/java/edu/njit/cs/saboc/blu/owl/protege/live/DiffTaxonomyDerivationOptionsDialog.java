@@ -2,15 +2,11 @@ package edu.njit.cs.saboc.blu.owl.protege.live;
 
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.ProtegeLiveTaxonomyDataManager;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.InheritableProperty;
-import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLInheritableProperty;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.wizard.OWLPAreaTaxonomyWizardPanel;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.wizard.OWLPAreaTaxonomyWizardPanel.OWLPAreaTaxonomyDerivationAction;
-import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
 import edu.njit.cs.saboc.blu.owl.protege.LiveTaxonomyView;
 import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
-import edu.njit.cs.saboc.blu.owl.protege.live.manager.LiveDiffTaxonomyManager;
-import edu.njit.cs.saboc.blu.owl.utils.owlproperties.PropertyTypeAndUsage;
 import java.util.Optional;
 import java.util.Set;
 import javax.swing.JDialog;

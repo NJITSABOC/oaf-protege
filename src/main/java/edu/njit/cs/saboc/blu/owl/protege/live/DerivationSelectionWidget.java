@@ -4,6 +4,8 @@ import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager;
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.ProtegeLiveTaxonomyDataManager;
 import edu.njit.cs.saboc.blu.core.gui.gep.AbNDisplayPanel;
 import edu.njit.cs.saboc.blu.core.gui.gep.AbNDisplayWidget;
+import edu.njit.cs.saboc.blu.core.gui.gep.panels.DiffTaxonomySubsetSelectionButton;
+import edu.njit.cs.saboc.blu.core.gui.gep.panels.DiffTaxonomySubsetSelectionButton.DiffTaxonomySubsetCreationAction;
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
 import edu.njit.cs.saboc.blu.owl.protege.LiveTaxonomyView;
 import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
@@ -39,8 +41,8 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     
     private final DiffDerivationTypeManager derivationTypeManager;
     
-    private final Dimension NO_WARNING_SIZE = new Dimension(570, 40);
-    private final Dimension WARNING_SIZE = new Dimension(570, 50);
+    private final Dimension NO_WARNING_SIZE = new Dimension(650, 40);
+    private final Dimension WARNING_SIZE = new Dimension(650, 50);
 
     private Dimension panelSize = NO_WARNING_SIZE;
     
@@ -53,6 +55,8 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     private final JToggleButton btnUseInferredHierarchy;
     
     private final JButton btnDerivationOptions;
+    
+    private final DiffTaxonomySubsetSelectionButton btnDisplayOptions;
     
     private final JLabel lblRefreshInferred;
     
@@ -144,7 +148,7 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
                             protegeTaxonomyView,
                             frameManager);
         
-        this.btnDerivationOptions = new JButton("Options");
+        this.btnDerivationOptions = new JButton("Derivation Options");
         this.btnDerivationOptions.addActionListener( (ae) -> {
             
             if(this.optCurrentDataManager.isPresent()) {
@@ -164,7 +168,17 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
 
         });
         
+        
         derivationPanel.add(btnDerivationOptions);
+        
+        DiffTaxonomySubsetCreationAction displayChangeAction = (displaySettings) -> {
+            this.optCurrentDataManager.get().getDiffTaxonomyManager().setDisplaySettings(displaySettings);
+            protegeTaxonomyView.updateTaxonomyDisplay();
+        };
+        
+        this.btnDisplayOptions = new DiffTaxonomySubsetSelectionButton(displayChangeAction);
+        
+        derivationPanel.add(btnDisplayOptions);
 
         fixedPointSelected();
         assertedHierarchySelected();

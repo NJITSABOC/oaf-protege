@@ -4,6 +4,7 @@ import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
+import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffTaxonomySubsetOptions;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomyFactory;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomy;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomyFactory;
@@ -32,10 +33,11 @@ public class DiffTaxonomyManager {
     private PAreaTaxonomy lastFixedPointTaxonomy = null;
     
     private DerivationSettings currentDerivationSettings;
-
+    
     private final ProtegeLiveTaxonomyDataManager dataManager;
     
     public DiffTaxonomyManager(ProtegeLiveTaxonomyDataManager dataManager) {
+        
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "DiffTaxonomyManager",
                 ""));
@@ -51,7 +53,7 @@ public class DiffTaxonomyManager {
         
         this.currentDerivationSettings = settings;
     }
-    
+
     public final void initialize(OAFOWLOntology startingOntology) {
 
         logger.debug(LogMessageGenerator.createLiveDiffString(
