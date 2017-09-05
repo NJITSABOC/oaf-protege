@@ -5,6 +5,7 @@ import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSettings;
 import java.util.ArrayList;
 import java.util.Optional;
+import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,7 @@ public class LiveDiffTaxonomyManager {
         
         this.dataManager = dataManager;
         
-        this.statedDiffTaxonomyManager = new DiffTaxonomyManager(dataManager);
+        this.statedDiffTaxonomyManager = new DiffTaxonomyManager(false);
         
         this.optInferredDiffTaxonomyManager = Optional.empty();
     }
@@ -110,16 +111,20 @@ public class LiveDiffTaxonomyManager {
                         "reset",
                         ""));
         
-        this.statedDiffTaxonomyManager.reset();
+        try {
+            this.statedDiffTaxonomyManager.reset();
 
-        if (this.optInferredDiffTaxonomyManager.isPresent()) {
-            
-            logger.debug(
-                    LogMessageGenerator.createLiveDiffString(
-                            "reset",
-                            "resetting inferred taxonomy manager"));
-            
-            optInferredDiffTaxonomyManager.get().reset();
+            if (this.optInferredDiffTaxonomyManager.isPresent()) {
+
+                logger.debug(
+                        LogMessageGenerator.createLiveDiffString(
+                                "reset",
+                                "resetting inferred taxonomy manager"));
+
+                optInferredDiffTaxonomyManager.get().reset();
+            }
+        } catch (OWLOntologyCreationException ooce) {
+            ooce.printStackTrace();
         }
     }
     
@@ -130,7 +135,15 @@ public class LiveDiffTaxonomyManager {
                         "initialize",
                         ""));
         
-        this.statedDiffTaxonomyManager.initialize(dataManager.getOntology());
+        try {
+            
+            this.statedDiffTaxonomyManager.initialize(dataManager);
+            
+        } catch(OWLOntologyCreationException ooce) {
+            
+            ooce.printStackTrace();
+            
+        }
     }
     
     public void setInferredRelsAvailable(boolean value) {
@@ -142,17 +155,22 @@ public class LiveDiffTaxonomyManager {
         
         this.inferredRelsAvailable = value;
         
-        if(value) {
-            DiffTaxonomyManager inferredDiffTaxonomyManager = 
-                    new DiffTaxonomyManager(dataManager);
-            
-            inferredDiffTaxonomyManager.setCurrentDerivationSettings(currentDerivationSettings);
-            
-            inferredDiffTaxonomyManager.initialize(dataManager.createInferredOntology());
-            
-            this.optInferredDiffTaxonomyManager = Optional.of(inferredDiffTaxonomyManager);
-        } else {
-            this.optInferredDiffTaxonomyManager = Optional.empty();
+        try {
+            if (value) {
+                DiffTaxonomyManager inferredDiffTaxonomyManager = new DiffTaxonomyManager(true);
+
+                inferredDiffTaxonomyManager.setCurrentDerivationSettings(currentDerivationSettings);
+
+                inferredDiffTaxonomyManager.initialize(dataManager);
+
+                this.optInferredDiffTaxonomyManager = Optional.of(inferredDiffTaxonomyManager);
+            } else {
+                this.optInferredDiffTaxonomyManager = Optional.empty();
+            }
+        } catch (OWLOntologyCreationException ooce) {
+
+            ooce.printStackTrace();
+
         }
     }
     
@@ -167,16 +185,24 @@ public class LiveDiffTaxonomyManager {
                         "update",
                         ""));
         
-        this.statedDiffTaxonomyManager.update(dataManager.getOntology());
+        try {
 
-        if (this.optInferredDiffTaxonomyManager.isPresent()) {
+            this.statedDiffTaxonomyManager.update(dataManager);
+
+            if (this.optInferredDiffTaxonomyManager.isPresent()) {
+
+                logger.debug(
+                        LogMessageGenerator.createLiveDiffString(
+                                "update",
+                                "updating inferred"));
+                
+                
+
+                optInferredDiffTaxonomyManager.get().update(dataManager);
+            }
             
-            logger.debug(
-                    LogMessageGenerator.createLiveDiffString(
-                            "update",
-                            "updating inferred"));
-            
-            optInferredDiffTaxonomyManager.get().update(dataManager.createInferredOntology());
+        } catch (OWLOntologyCreationException exception) {
+
         }
     }
     

@@ -36,6 +36,10 @@ public class ProtegeOAFOntologyDataManager extends OAFOntologyDataManager {
         this.protegeModelManager = protegeModelManager;
     }
     
+    public OWLModelManager getProtegeModelManager() {
+        return protegeModelManager;
+    }
+    
     public void setInferredRelsAvailable(boolean value) {
         this.inferredRelsAvailable = value;
         

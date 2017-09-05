@@ -4,14 +4,18 @@ import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.diff.DiffPAreaTaxonomyGenerator;
 import edu.njit.cs.saboc.blu.core.datastructure.hierarchy.Hierarchy;
-import edu.njit.cs.saboc.blu.core.graph.pareataxonomy.diff.DiffTaxonomySubsetOptions;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.OWLPAreaTaxonomyFactory;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomy;
 import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAreaTaxonomyFactory;
-import edu.njit.cs.saboc.blu.owl.ontology.OAFOWLOntology;
+import edu.njit.cs.saboc.blu.owl.ontology.OAFOntologyDataManager;
 import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
 import edu.njit.cs.saboc.blu.owl.protege.LogMessageGenerator;
+import edu.njit.cs.saboc.blu.owl.protege.ProtegeOAFOntologyDataManager;
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSettings;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyCreationException;
+import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,26 +27,26 @@ public class DiffTaxonomyManager {
     
     private final Logger logger = LoggerFactory.getLogger(DiffTaxonomyManager.class);
 
-    private OAFOWLOntology currentOntology = null;
+    private ProtegeOAFOntologyDataManager currentDataManager = null;
     private PAreaTaxonomy currentTaxonomy = null;
     
-    private OAFOWLOntology previousOntology = null;
+    private ProtegeOAFOntologyDataManager previousDataManager = null;
     private PAreaTaxonomy lastUpdatedTaxonomy = null;
     
-    private OAFOWLOntology lastFixedPointOntology = null;
+    private ProtegeOAFOntologyDataManager lastFixedPointDataManager = null;
     private PAreaTaxonomy lastFixedPointTaxonomy = null;
     
     private DerivationSettings currentDerivationSettings;
+
+    private final boolean useInferredRels;
     
-    private final ProtegeLiveTaxonomyDataManager dataManager;
-    
-    public DiffTaxonomyManager(ProtegeLiveTaxonomyDataManager dataManager) {
+    public DiffTaxonomyManager(boolean useInferredRels) {
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "DiffTaxonomyManager",
                 ""));
-
-        this.dataManager = dataManager;
+        
+        this.useInferredRels = useInferredRels;
     }
         
     public void setCurrentDerivationSettings(DerivationSettings settings) {
@@ -54,47 +58,80 @@ public class DiffTaxonomyManager {
         this.currentDerivationSettings = settings;
     }
 
-    public final void initialize(OAFOWLOntology startingOntology) {
+    public final void initialize(ProtegeOAFOntologyDataManager dataManager) throws OWLOntologyCreationException {
 
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "initialize",
-                String.format("startingHierarchy: %s (%d)", 
-                        startingOntology.getConceptHierarchy().getRoot().getName(), 
-                        startingOntology.getConceptHierarchy().size())));
+                ""));
         
-        this.currentOntology = startingOntology;
-        this.previousOntology = startingOntology;
-        this.lastFixedPointOntology = startingOntology;
+        ProtegeOAFOntologyDataManager manager = deepCloneOAFOntologyManager(dataManager);
         
-        PAreaTaxonomy startingTaxonomy = this.createTaxonomyFrom(startingOntology);
+        if(useInferredRels) {
+            manager.setInferredRelsAvailable(true);
+        } else {
+            manager.initialize();
+        }
+        
+        this.currentDataManager = manager;
+        this.previousDataManager = manager;
+        this.lastFixedPointDataManager = manager;
+        
+        PAreaTaxonomy startingTaxonomy = this.createTaxonomyFrom(manager);
         
         this.currentTaxonomy = startingTaxonomy;
         this.lastUpdatedTaxonomy = startingTaxonomy;
         this.lastFixedPointTaxonomy = startingTaxonomy;
     }
     
-    public void reset() {
+    // Makes a copy of the ontology into new data manager
+    private ProtegeOAFOntologyDataManager deepCloneOAFOntologyManager(ProtegeOAFOntologyDataManager dataManager) throws OWLOntologyCreationException {
+        
+        OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+
+        OWLOntology ontologyClone = manager.createOntology(dataManager.getSourceOntology().getAxioms());
+        
+        OAFOntologyDataManager updatedOntologyManager = new OAFOntologyDataManager(
+                dataManager.getOAFStateFileManager(), 
+                dataManager.getManager(),
+                dataManager.getOntologyFile(),
+                dataManager.getOntologyName(),
+                ontologyClone
+            );
+        
+        ProtegeOAFOntologyDataManager protegeManager = new ProtegeOAFOntologyDataManager(
+                dataManager.getProtegeModelManager(), updatedOntologyManager);
+        
+        return protegeManager;
+    }
+    
+    public void reset() throws OWLOntologyCreationException {
 
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "reset",
                 ""));
         
-        this.initialize(currentOntology);
+        this.initialize(currentDataManager);
     }
     
-    public void update(OAFOWLOntology ontology) {
+    public void update(ProtegeOAFOntologyDataManager dataManager) throws OWLOntologyCreationException {
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "update",
-                String.format("hierarchy: %s (%d)", 
-                        ontology.getConceptHierarchy().getRoot().getName(), 
-                        ontology.getConceptHierarchy().size())));
+                ""));
         
-        this.previousOntology = this.currentOntology;
+        this.previousDataManager = this.currentDataManager;
         
-        this.currentOntology = ontology;
+        ProtegeOAFOntologyDataManager manager = deepCloneOAFOntologyManager(dataManager);
+        
+        if(useInferredRels) {
+            manager.setInferredRelsAvailable(true);
+        } else {
+            manager.initialize();
+        }
+                
+        this.currentDataManager = manager;
 
-        this.setCurrentTaxonomy(createTaxonomyFrom(ontology));
+        this.setCurrentTaxonomy(createTaxonomyFrom(manager));
     }
     
     private void setCurrentTaxonomy(PAreaTaxonomy startingTaxonomy) {
@@ -123,11 +160,10 @@ public class DiffTaxonomyManager {
         DiffPAreaTaxonomyGenerator diffTaxonomyGenerator = new DiffPAreaTaxonomyGenerator();
 
         OWLDiffPAreaTaxonomy diffTaxonomy
-                = (OWLDiffPAreaTaxonomy) diffTaxonomyGenerator.createDiffPAreaTaxonomy(
-                        new OWLDiffPAreaTaxonomyFactory(lastFixedPointTaxonomy, currentTaxonomy),
-                        lastFixedPointOntology,
+                = (OWLDiffPAreaTaxonomy) diffTaxonomyGenerator.createDiffPAreaTaxonomy(new OWLDiffPAreaTaxonomyFactory(lastFixedPointTaxonomy, currentTaxonomy),
+                        lastFixedPointDataManager.getOntology(),
                         lastFixedPointTaxonomy,
-                        currentOntology,
+                        currentDataManager.getOntology(),
                         currentTaxonomy);
                 
         logger.debug(LogMessageGenerator.createLiveDiffString(
@@ -148,11 +184,10 @@ public class DiffTaxonomyManager {
         DiffPAreaTaxonomyGenerator diffTaxonomyGenerator = new DiffPAreaTaxonomyGenerator();
 
         OWLDiffPAreaTaxonomy diffTaxonomy
-                = (OWLDiffPAreaTaxonomy) diffTaxonomyGenerator.createDiffPAreaTaxonomy(
-                        new OWLDiffPAreaTaxonomyFactory(lastUpdatedTaxonomy, currentTaxonomy),
-                        previousOntology,
+                = (OWLDiffPAreaTaxonomy) diffTaxonomyGenerator.createDiffPAreaTaxonomy(new OWLDiffPAreaTaxonomyFactory(lastUpdatedTaxonomy, currentTaxonomy),
+                        previousDataManager.getOntology(),
                         lastUpdatedTaxonomy,
-                        currentOntology,
+                        currentDataManager.getOntology(),
                         currentTaxonomy);
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
@@ -164,13 +199,11 @@ public class DiffTaxonomyManager {
         return diffTaxonomy;
     }
     
-    private PAreaTaxonomy createTaxonomyFrom(OAFOWLOntology ontology) {
+    private PAreaTaxonomy createTaxonomyFrom(OAFOntologyDataManager dataManager) {
         
         logger.debug(LogMessageGenerator.createLiveDiffString(
                 "createTaxonomyFrom",
-                String.format("hierarchy: %s (%d)",
-                        ontology.getConceptHierarchy().getRoot().getName(),
-                        ontology.getConceptHierarchy().size())));
+                ""));
         
         OWLPAreaTaxonomyFactory factory = new OWLPAreaTaxonomyFactory(
                 dataManager, 
@@ -179,7 +212,7 @@ public class DiffTaxonomyManager {
         PAreaTaxonomyGenerator generator = new PAreaTaxonomyGenerator();
 
         Hierarchy<OWLConcept> taxonomySubhierarchy = 
-                ontology.getConceptHierarchy().getSubhierarchyRootedAt(
+                dataManager.getOntology().getConceptHierarchy().getSubhierarchyRootedAt(
                     this.currentDerivationSettings.getRoot());
 
         PAreaTaxonomy taxonomy = generator.derivePAreaTaxonomy(factory, taxonomySubhierarchy);
