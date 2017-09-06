@@ -41,8 +41,11 @@ public class DerivationSelectionWidget extends AbNDisplayWidget {
     
     private final DiffDerivationTypeManager derivationTypeManager;
     
-    private final Dimension NO_WARNING_SIZE = new Dimension(650, 40);
-    private final Dimension WARNING_SIZE = new Dimension(650, 50);
+    private final int PANEL_WIDTH = 800;
+    private final int PANEL_HEIGHT = 40;
+    
+    private final Dimension NO_WARNING_SIZE = new Dimension(PANEL_WIDTH, PANEL_HEIGHT);
+    private final Dimension WARNING_SIZE = new Dimension(PANEL_WIDTH, PANEL_HEIGHT + 10);
 
     private Dimension panelSize = NO_WARNING_SIZE;
     

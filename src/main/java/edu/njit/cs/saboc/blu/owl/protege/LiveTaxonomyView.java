@@ -17,6 +17,7 @@ import edu.njit.cs.saboc.blu.owl.abn.pareataxonomy.diffpareataxonomy.OWLDiffPAre
 import edu.njit.cs.saboc.blu.owl.gui.abnselection.OWLAbNFrameManager;
 import edu.njit.cs.saboc.blu.owl.ontology.OAFOntologyDataManager;
 import edu.njit.cs.saboc.blu.owl.ontology.OWLConcept;
+import edu.njit.cs.saboc.blu.owl.protege.live.ChangeAlertWidget;
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSelectionWidget;
 import edu.njit.cs.saboc.blu.owl.protege.live.DerivationSettings;
 import edu.njit.cs.saboc.blu.owl.protege.live.manager.DiffDerivationTypeManager;
@@ -71,6 +72,8 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
     private ProtegeDiffTaxonomyExplorationPanel explorationPanel;
     
     private DerivationSelectionWidget derivationSelectionWidget;
+    
+    private ChangeAlertWidget changeAlertWidget;
     
     private boolean reasonerRunning = false;
 
@@ -330,7 +333,10 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
         
         this.derivationSelectionWidget.setCurrentDataManager(dataManager);
         
+        this.changeAlertWidget = new ChangeAlertWidget(explorationPanel.getDisplayPanel());
+        
         this.explorationPanel.getDisplayPanel().addWidget(derivationSelectionWidget);
+        this.explorationPanel.getDisplayPanel().addWidget(changeAlertWidget);
 
         this.add(explorationPanel, BorderLayout.CENTER);
 
@@ -598,6 +604,8 @@ public class LiveTaxonomyView extends AbstractOWLViewComponent {
 
             explorationPanel.initialize(graph, config, new DiffTaxonomyPainter());
 
+            this.changeAlertWidget.update(diffTaxonomy);
+            
             explorationPanel.revalidate();
             explorationPanel.repaint();
         });
