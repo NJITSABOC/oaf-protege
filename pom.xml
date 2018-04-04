@@ -10,7 +10,7 @@
 
     <groupId>edu.njit.cs.saboc</groupId>
     <artifactId>oaf-protege</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <name>OAF Protege Plugin</name> 
     <description>The Ontology Abstraction Framework for Protege</description> 
 
